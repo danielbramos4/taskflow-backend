@@ -17,8 +17,8 @@ organizações não faz parte desta implementação da fundação.
 | Usuários e organizações | `User`, `Organization`, `Membership`; vínculo único por usuário/organização e papéis owner/member | Implementado |
 | JWT e permissões | Login, refresh e `/me/`; autenticação obrigatória nos endpoints protegidos | Implementado para os endpoints existentes |
 | Pytest | 6 testes de autenticação e 5 testes de modelos de organizações | 11 testes aprovados |
-| Ruff e GitHub Actions | `pyproject.toml`, dependências versionadas e `.github/workflows/ci.yml` | Configurado localmente; execução remota pendente |
-| Critérios de aceitação | Checklist abaixo | Validação local concluída; CI remota pendente |
+| Ruff e GitHub Actions | `pyproject.toml`, dependências versionadas e `.github/workflows/ci.yml` | Validado localmente e no GitHub Actions |
+| Critérios de aceitação | Checklist abaixo | Critérios locais e CI aprovados |
 
 ## Critérios de aceitação da fundação
 
@@ -40,7 +40,7 @@ Requisitos adicionais de produto devem ser acrescentados antes de ampliar o esco
 - [x] `/me/` retorna o próprio usuário e rejeita ausência de token ou token inválido.
 - [x] `pip check`, Ruff, Django e os 11 testes passam localmente.
 - [x] Workflow preparado com banco isolado e sem segredos locais.
-- [ ] Publicar as alterações e confirmar uma execução bem-sucedida no GitHub Actions.
+- [x] Alterações publicadas no pull request #1 e execução bem-sucedida no GitHub Actions confirmada.
 
 Os papéis owner/member estão modelados; regras de autorização para futuras
 operações sobre organizações ainda precisam ser definidas e testadas junto com
@@ -65,9 +65,15 @@ a senha do PostgreSQL, não removem volumes e não implementam funcionalidades d
 uma sprint futura. O comando de migração do CI atua apenas no banco temporário
 criado pelo próprio workflow.
 
-## Pendência de entrega
+## Validação remota e entrega
 
-A presença do workflow local não comprova uma execução no GitHub. A validação
-remota deve ser registrada somente depois de uma execução verde na aba Actions.
-As alterações de credenciais e os testes de autenticação que já estavam no diretório
-de trabalho devem ser incluídos na revisão da entrega, preservando o `.env` local.
+O [pull request #1](https://github.com/danielbramos4/taskflow-backend/pull/1) publicou
+o conjunto validado. A [execução de CI #2](https://github.com/danielbramos4/taskflow-backend/actions/runs/39431381079)
+foi concluída com sucesso em 20/10/2026 para o commit `136e97f`: instalação de
+dependências, Ruff, formatação, verificações Django, migrações e os 11 testes
+aprovados em PostgreSQL 17 isolado.
+
+A entrega inclui as alterações de configuração e os testes de autenticação que
+já estavam no diretório de trabalho. O `.env` local foi preservado e não entrou
+no versionamento. O pull request permanece aberto para revisão; a integração
+na branch principal ainda não foi realizada.

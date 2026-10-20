@@ -115,9 +115,9 @@ Para aplicar correções locais de estilo:
 O workflow `.github/workflows/ci.yml` executa Ruff, verificações Django, migrações
 e Pytest em Python 3.12 e PostgreSQL 17. Ele usa um banco temporário e valores
 fictícios próprios; não precisa de `.env` nem de segredos do desenvolvimento.
-Depois que o workflow for publicado, ele executará em pushes, pull requests e
-acionamento manual. A primeira execução deve ficar verde na aba Actions para
-concluir a validação remota da Sprint 1.
+O workflow executa em pushes, pull requests e acionamento manual. A execução
+remota da Sprint 1 foi aprovada; a evidência está registrada em
+[Sprint 1](docs/sprint-1.md).
 
 Referências: [configuração do Ruff](https://docs.astral.sh/ruff/configuration/) e
 [PostgreSQL no GitHub Actions](https://docs.github.com/en/actions/tutorials/use-containerized-services/create-postgresql-service-containers).
