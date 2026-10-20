@@ -75,5 +75,5 @@ aprovados em PostgreSQL 17 isolado.
 
 A entrega inclui as alterações de configuração e os testes de autenticação que
 já estavam no diretório de trabalho. O `.env` local foi preservado e não entrou
-no versionamento. O pull request permanece aberto para revisão; a integração
-na branch principal ainda não foi realizada.
+no versionamento. O estado de revisão e integração na branch principal pode
+ser consultado no próprio pull request.
