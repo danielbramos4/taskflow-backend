@@ -1,9 +1,8 @@
 import pytest
-
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 
-from apps.organizations.models import Organization, Membership
+from apps.organizations.models import Membership, Organization
 
 
 @pytest.fixture
