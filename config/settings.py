@@ -9,9 +9,10 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
+
 from datetime import timedelta
-from django.core.exceptions import ImproperlyConfigured
 from pathlib import Path
+
 import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,7 +21,9 @@ env = environ.Env(
     DEBUG=(bool, False),
 )
 
-environ.Env.read_env(BASE_DIR / ".env")
+# Variaveis do processo (Windows/CI) prevalecem sobre o .env local.
+# Mantenha a mesma precedencia usada pelo Docker Compose.
+environ.Env.read_env(BASE_DIR / ".env", overwrite=False)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 
@@ -43,10 +46,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
     # Bibliotecas externas
     "rest_framework",
-
     # Aplicativos internos
     "apps.accounts.apps.AccountsConfig",
     "apps.organizations.apps.OrganizationsConfig",

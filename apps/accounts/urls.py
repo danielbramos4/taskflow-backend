@@ -6,7 +6,6 @@ from rest_framework_simplejwt.views import (
 
 from apps.accounts.views import CurrentUserView
 
-
 urlpatterns = [
     path(
         "token/",

@@ -4,6 +4,8 @@ services:
   db:
     image: postgres:17-alpine
     restart: unless-stopped
+    # Na interpolacao, o ambiente do terminal prevalece sobre o .env.
+    # POSTGRES_* inicializa volumes vazios; nao altera credenciais existentes.
     environment:
       POSTGRES_DB: ${POSTGRES_DB:?Defina POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER:?Defina POSTGRES_USER}
