@@ -3,7 +3,8 @@
 Fundação do backend TaskFlow em Django, Django REST Framework e PostgreSQL.
 
 Repositório: [danielbramos4/taskflow-backend](https://github.com/danielbramos4/taskflow-backend).
-O escopo e os critérios de aceitação estão em [Sprint 1](docs/sprint-1.md).
+A fundação e os critérios concluídos estão em [Sprint 1](docs/sprint-1.md).
+O planejamento de organizações e permissões está em [Sprint 2](docs/sprint-2.md).
 
 ## Requisitos
 
@@ -75,9 +76,41 @@ No VS Code, selecione `.venv/Scripts/python.exe` como interpretador Python.
 | POST | `/api/v1/auth/token/` | Recebe `username` e `password`; devolve access e refresh JWT. |
 | POST | `/api/v1/auth/token/refresh/` | Recebe `refresh`; devolve um novo access JWT. |
 | GET | `/api/v1/auth/me/` | Requer `Authorization: Bearer <access>` e devolve o próprio usuário. |
+| GET | `/api/v1/organizations/` | Lista somente organizações do solicitante, com paginação. |
+| POST | `/api/v1/organizations/` | Cria organização e vínculo de proprietário para o solicitante. |
 
-Organizações e vínculos de membros estão implementados como modelos. Endpoints
-de organizações e autorização dessas operações serão definidos em outra etapa.
+A coleção de organizações está disponível na Entrega 1 da Sprint 2. Detalhes,
+edição de organizações e administração de membros continuam nas próximas entregas.
+
+## API de organizações — Entrega 1
+
+As duas operações exigem `Authorization: Bearer <access>`. A identidade é obtida
+do JWT; o cliente não escolhe outro usuário ou proprietário.
+
+Para criar, envie JSON a `POST /api/v1/organizations/`:
+
+```json
+{
+  "name": "Equipe Exemplo",
+  "slug": "equipe-exemplo"
+}
+```
+
+A resposta 201 contém `id`, `name`, `slug`, `my_role`, `created_at` e `updated_at`.
+`my_role` será `owner`. A criação da organização e do vínculo é uma única
+transação: uma falha no vínculo desfaz a organização.
+
+`GET /api/v1/organizations/` retorna `count`, `next`, `previous` e `results`, com
+20 organizações por página e ordenação por `name, id`. Use `?page=2` para a
+próxima página. Um usuário pode aparecer como proprietário em uma organização e
+como membro em outra; `my_role` é calculado para o usuário atual. Sem vínculos,
+a resposta é 200 com `results: []`. Parâmetros como `user_id` não ampliam o acesso.
+
+Erros previstos: 400 para campos inválidos, slug duplicado ou campos não aceitos;
+401 para JWT ausente/inválido; 404 para página inexistente; 405 para métodos de
+escrita não oferecidos na coleção. Somente `name` e `slug` são aceitos no POST;
+campos como `id`, `owner`, `user_id` e `my_role` recebem 400. Falhas de integridade
+não previstas na criação retornam 500 com mensagem genérica, sem detalhes do banco.
 
 ## Validação local
 
