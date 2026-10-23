@@ -7,8 +7,8 @@ as organizações das quais participa e administre seus membros conforme o papel
 que possui em cada organização.
 
 Escopo escolhido: organizações e permissões. Execução por entregas, sem prazo
-fixo. A implementação começa somente após o planejamento; este documento não
-representa funcionalidades já disponíveis.
+fixo. A Entrega 1 está implementada e validada no CI, em revisão no PR #2.
+As Entregas 2 a 4 continuam planejadas.
 
 ## Ponto de partida
 
@@ -76,13 +76,13 @@ nem detalhes de configuração.
 **Resultado:** o usuário consegue iniciar sua organização e vê somente suas
 participações na listagem.
 
-- [ ] Implementar serialização e rotas de coleção de organizações.
-- [ ] Exigir JWT e filtrar a listagem pelos vínculos do solicitante.
-- [ ] Criar organização e vínculo `owner` na mesma transação.
-- [ ] Definir o criador pelo JWT; impedir que o cliente escolha outro proprietário.
-- [ ] Validar nome, slug, campos permitidos e paginação.
-- [ ] Testar sucesso, falha de validação, ausência de autenticação e isolamento.
-- [ ] Testar que falha na criação do vínculo não deixa organização órfã.
+- [x] Implementar serialização e rotas de coleção de organizações.
+- [x] Exigir JWT e filtrar a listagem pelos vínculos do solicitante.
+- [x] Criar organização e vínculo `owner` na mesma transação.
+- [x] Definir o criador pelo JWT; impedir que o cliente escolha outro proprietário.
+- [x] Validar nome, slug, campos permitidos e paginação.
+- [x] Testar sucesso, falha de validação, ausência de autenticação e isolamento.
+- [x] Testar que falha na criação do vínculo não deixa organização órfã.
 
 **Aceite:** criar retorna 201 e exatamente um vínculo de proprietário para o
 solicitante. O usuário A não vê a organização exclusiva de B na listagem. Um
@@ -139,7 +139,7 @@ permanecer; membros não possuem uma operação separada de saída nesta sprint.
 
 ## Critérios de aceitação da sprint
 
-- [ ] Um usuário cria uma organização e se torna proprietário automaticamente.
+- [x] Um usuário cria uma organização e se torna proprietário automaticamente.
 - [ ] Listagens e detalhes respeitam os vínculos do usuário em todas as organizações.
 - [ ] Autenticação não permite acesso a recursos de uma organização externa.
 - [ ] Membro lê dados permitidos, mas não administra a organização ou seus membros.
@@ -186,8 +186,24 @@ Concluir cada entrega com seus testes e critérios antes de iniciar a seguinte:
 1 → 2 → 3 → 4. Uma entrega pode ser dividida em PRs menores conforme a revisão;
 não há datas, estimativas em dias ou quantidade de testes tratadas como compromisso.
 
-Primeiro trabalho de implementação: Entrega 1, com criação atômica de organização,
-vínculo de proprietário e listagem isolada por usuário.
+Próximo trabalho de implementação: Entrega 2, após a revisão e integração da
+Entrega 1, com consulta e edição de organizações conforme participação e papel.
+
+## Progresso da Entrega 1 — 23/10/2026
+
+O [PR #2](https://github.com/danielbramos4/taskflow-backend/pull/2) contém a criação
+e listagem de organizações. A [execução CI #9](https://github.com/danielbramos4/taskflow-backend/actions/runs/40002910065),
+para o commit `369bb76`, aprovou 50 testes (11 anteriores e 39 novos), Ruff,
+formatação, dependências, verificações Django e migrações no PostgreSQL 17.
+
+O Docker Desktop local não disponibilizou o serviço durante esta execução;
+a suíte e as migrações foram validadas no PostgreSQL isolado do CI. A auditoria
+somente leitura dos registros locais permanece pendente até o banco estar disponível.
+
+Modelos, credenciais e volumes existentes foram preservados. A criação da
+organização e do proprietário é atômica; a listagem é filtrada pelo vínculo do
+solicitante e informa seu papel em cada organização. O estado da revisão e da
+integração deve ser consultado no próprio PR.
 
 ## Referências técnicas
 
