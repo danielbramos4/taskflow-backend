@@ -5,9 +5,10 @@
 Permitir que equipes organizem seu trabalho em projetos vinculados a uma
 organização, preservando o isolamento e os papéis entregues na Sprint 2.
 Prioridade escolhida pelo usuário: projetos por organização. Execução por
-entregas, sem prazo fixo. A Entrega 1 está implementada e validada localmente,
-para revisão no PR. As Entregas 2 a 4 continuam planejadas: consulta/edição,
-arquivamento e aceite completo.
+entregas, sem prazo fixo. A Entrega 1 foi integrada à `main` pelo
+[PR #6](https://github.com/danielbramos4/taskflow-backend/pull/6), com CI aprovado.
+A Entrega 2 está implementada e validada localmente, para revisão no PR. As Entregas 3 e 4
+continuam planejadas: arquivamento/restauração e aceite completo.
 
 ## Base disponível
 
@@ -108,13 +109,13 @@ ou não autorizada não deixa projeto persistido. A coleção não mistura equip
 **Resultado:** participantes consultam o projeto e apenas proprietários editam
 nome e descrição, sem transferi-lo para outra organização ou autor.
 
-- [ ] Implementar GET e PATCH de detalhes com busca limitada à organização.
-- [ ] Preservar campos omitidos no PATCH e validar limites/valores.
-- [ ] Proibir alteração de organização, autor, datas, ID e arquivamento nesta entrega.
-- [ ] Testar tentativa de acessar projeto de B pelo caminho de A e IDs inexistentes.
-- [ ] Testar papéis distintos da mesma pessoa em organizações diferentes.
-- [ ] Testar autoria sem vínculo e alteração/revogação de papel com o mesmo JWT.
-- [ ] Documentar requests, respostas e erros e conferir o CI do PR.
+- [x] Implementar GET e PATCH de detalhes com busca limitada à organização.
+- [x] Preservar campos omitidos no PATCH e validar limites/valores.
+- [x] Proibir alteração de organização, autor, datas, ID e arquivamento nesta entrega.
+- [x] Testar tentativa de acessar projeto de B pelo caminho de A e IDs inexistentes.
+- [x] Testar papéis distintos da mesma pessoa em organizações diferentes.
+- [x] Testar autoria sem vínculo e alteração/revogação de papel com o mesmo JWT.
+- [x] Documentar requests, respostas e erros e conferir o CI do PR.
 
 **Aceite:** membro consulta com 200 e edita com 403; externo recebe 404;
 campos inválidos ou tentativa de transferir o projeto não modificam dados.
@@ -198,5 +199,40 @@ credenciais permanece igual.
 
 README atualizado com a coleção disponível, validações e atualização segura
 de outra instalação no PowerShell. A execução remota e o estado da revisão
-ficam registrados no PR desta entrega. Próximo trabalho: Entrega 2, após
-revisão e integração da criação/listagem de projetos.
+ficam registrados no PR desta entrega. A criação/listagem foi integrada pelo PR #6.
+Próximo trabalho: Entrega 3, após revisão e integração da consulta/edição.
+
+## Progresso da Entrega 2 — 26/10/2026
+
+GET e PATCH individuais implementados com busca do projeto limitada à
+organização autorizada. O mesmo filtro é compartilhado com a coleção; a
+permissão é conferida sobre a organização antes de consultar o projeto.
+Proprietários editam somente nome e descrição, preservando campos omitidos e
+campos controlados pelo servidor. PATCH vazio mantém os dados e updated_at.
+
+A edição bloqueia a organização e consulta novamente vínculo/papel após a
+espera. Autoria não concede acesso independente: rebaixamento e remoção são
+observados com o mesmo JWT, assim como a promoção de membro a proprietário.
+O projeto pode ser consultado e editado se já estiver arquivado, mas alterar
+is_archived continua reservado à próxima entrega. IDs de projeto ou parâmetros
+de consulta não transferem o alvo entre organizações.
+
+A suíte local aprovou **304 testes em 29,92 s** no PostgreSQL separado de testes:
+247 anteriores e 57 novos. Os testes novos verificam papéis, autoria, ausência de
+JWT, superusuários, projetos de outra organização, campos proibidos, limites,
+PATCH parcial, resposta sem dados privados, promoção/revogação com o mesmo JWT,
+revogação concorrente durante a espera pelo bloqueio e falha real de chave
+estrangeira adiada até o commit da edição, com rollback e mensagem genérica.
+Ruff, formatação, dependências, Django e a verificação de migrações passaram.
+
+Não houve mudança de modelos, configurações ou migrações. Os arquivos anteriores
+fora do escopo desta entrega foram preservados por comparação de hashes,
+incluindo credenciais, Compose, modelos e testes anteriores não afetados.
+A auditoria somente leitura encontrou zero organizações e zero projetos no
+banco de desenvolvimento e nenhuma migração pendente. Nenhum registro de exemplo
+foi criado ou alterado nesse banco e nenhum volume foi removido.
+
+README atualizado com caminhos, exemplos, campos, erros e validação em novo
+PowerShell. A validação remota e o estado da revisão ficam registrados no PR
+desta entrega. Próximo trabalho: Entrega 3, após integrar consulta e edição,
+com arquivamento/restauração de projetos preservando as mesmas permissões.

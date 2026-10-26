@@ -38,3 +38,10 @@ class ProjectSerializer(serializers.ModelSerializer):
                     {field: ["Campo não permitido."] for field in sorted(unexpected)}
                 )
         return super().to_internal_value(data)
+
+    def update(self, instance, validated_data):
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        if validated_data:
+            instance.save(update_fields=[*validated_data, "updated_at"])
+        return instance
