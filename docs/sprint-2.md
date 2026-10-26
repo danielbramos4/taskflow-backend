@@ -196,9 +196,12 @@ e listagem de organizações. A [execução CI #9](https://github.com/danielbram
 para o commit `369bb76`, aprovou 50 testes (11 anteriores e 39 novos), Ruff,
 formatação, dependências, verificações Django e migrações no PostgreSQL 17.
 
-O Docker Desktop local não disponibilizou o serviço durante esta execução;
-a suíte e as migrações foram validadas no PostgreSQL isolado do CI. A auditoria
-somente leitura dos registros locais permanece pendente até o banco estar disponível.
+Em 26/10/2026, WSL e Docker voltaram a responder e o PostgreSQL existente foi
+validado localmente. Os 50 testes passaram também no banco separado de testes
+(`--reuse-db`, 6,16 s), com Django sem problemas e nenhuma migração pendente.
+A auditoria somente leitura encontrou zero organizações existentes e zero sem
+proprietário ativo; não há registros antigos para regularizar. Credenciais,
+modelos e Compose foram preservados byte a byte; nenhum volume foi removido.
 
 Modelos, credenciais e volumes existentes foram preservados. A criação da
 organização e do proprietário é atômica; a listagem é filtrada pelo vínculo do
