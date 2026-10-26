@@ -7,12 +7,14 @@ as organizações das quais participa e administre seus membros conforme o papel
 que possui em cada organização.
 
 Escopo escolhido: organizações e permissões. Execução por entregas, sem prazo
-fixo. A Entrega 1 foi integrada à `main` pelo PR #2, com validação local e no CI.
-A Entrega 2 foi integrada à `main` pelo PR #3, com validação local e no CI.
-A Entrega 3 está implementada e validada localmente, para revisão no PR. A Entrega 4
-continua planejada.
+fixo. Sprint concluída em 26/10/2026, com as quatro entregas e todos os critérios
+de aceite validados. As Entregas 1, 2 e 3 foram integradas à `main` pelos
+[PR #2](https://github.com/danielbramos4/taskflow-backend/pull/2),
+[PR #3](https://github.com/danielbramos4/taskflow-backend/pull/3) e
+[PR #4](https://github.com/danielbramos4/taskflow-backend/pull/4).
+A Entrega 4 encerra a documentação, o teste integrado e a revisão dos critérios.
 
-## Ponto de partida
+## Ponto de partida da sprint
 
 - Sprint 1 integrada à `main`, com CI aprovado e 11 testes existentes.
 - Django, PostgreSQL, JWT e `/api/v1/auth/me/` funcionais.
@@ -21,7 +23,7 @@ continua planejada.
 - Restrição de unicidade do vínculo usuário/organização já aplicada no banco.
 - APIs de organizações e regras de autorização dessas operações ainda ausentes.
 
-## Regras de acesso propostas
+## Regras de acesso entregues
 
 O papel vale dentro de cada organização: ser proprietário de A não concede
 permissões sobre B. A identidade sempre vem do JWT validado pelo servidor.
@@ -39,7 +41,7 @@ permissões sobre B. A identidade sempre vem do JWT validado pelo servidor.
 
 Requisições sem autenticação válida recebem 401. Para quem não participa da
 organização, recursos existentes e inexistentes têm a mesma resposta 404.
-Não haverá exceção automática para `is_staff` ou `is_superuser` nessa API.
+Não há exceção automática para `is_staff` ou `is_superuser` nessa API.
 
 ## Contrato da API
 
@@ -61,7 +63,7 @@ Resposta de organização: `id`, `name`, `slug`, `my_role`, `created_at`, `updat
 Resposta de vínculo: `id`, `user_id`, `username`, `role`, `created_at`.
 As respostas não incluem senhas, tokens ou e-mails de outros usuários.
 
-Paginação proposta: 20 registros por página, com `count`, `next`, `previous` e
+Paginação: 20 registros por página, com `count`, `next`, `previous` e
 `results`. Ordenação estável por `name, id` nas organizações e `created_at, id`
 nos vínculos. Não adicionar filtros que ampliem o conjunto acessível ao usuário.
 
@@ -130,29 +132,29 @@ permanecer; membros não possuem uma operação separada de saída nesta sprint.
 
 **Resultado:** API documentada, testes de isolamento aprovados e entrega revisável.
 
-- [ ] Documentar requests, respostas, paginação e erros no README.
-- [ ] Registrar exemplo completo: criar organização, adicionar membro e testar permissões.
-- [ ] Garantir compatibilidade dos endpoints de autenticação já existentes.
-- [ ] Executar Pytest com PostgreSQL e manter os 11 testes anteriores aprovados.
-- [ ] Aprovar Ruff, formatação, `pip check` e verificações Django.
-- [ ] Confirmar que não há mudanças de modelo sem migração.
-- [ ] Publicar cada entrega em PR e conferir CI verde antes da integração.
-- [ ] Revisar os critérios abaixo e registrar as execuções de validação.
+- [x] Documentar requests, respostas, paginação e erros no README.
+- [x] Registrar exemplo completo: criar organização, adicionar membro e testar permissões.
+- [x] Garantir compatibilidade dos endpoints de autenticação já existentes.
+- [x] Executar Pytest com PostgreSQL e manter os 11 testes anteriores aprovados.
+- [x] Aprovar Ruff, formatação, `pip check` e verificações Django.
+- [x] Confirmar que não há mudanças de modelo sem migração.
+- [x] Publicar cada entrega em PR e conferir CI verde antes da integração.
+- [x] Revisar os critérios abaixo e registrar as execuções de validação.
 
 ## Critérios de aceitação da sprint
 
 - [x] Um usuário cria uma organização e se torna proprietário automaticamente.
-- [ ] Listagens e detalhes respeitam os vínculos do usuário em todas as organizações.
-- [ ] Autenticação não permite acesso a recursos de uma organização externa.
-- [ ] Membro lê dados permitidos, mas não administra a organização ou seus membros.
-- [ ] Proprietário administra somente organizações em que possui esse papel.
-- [ ] Vínculo e papel não são forjáveis por campos enviados pelo cliente.
-- [ ] A API não deixa organizações órfãs ao criar ou alterar vínculos.
-- [ ] Exclusão de vínculo não exclui conta, organização ou dados de outra equipe.
-- [ ] Remover um vínculo revoga o acesso sem exigir expiração do JWT.
-- [ ] Respostas de erro e regras de paginação seguem o contrato documentado.
-- [ ] Testes antigos e novos passam no PostgreSQL e no GitHub Actions.
-- [ ] Documentação, critérios e PRs refletem o comportamento entregue.
+- [x] Listagens e detalhes respeitam os vínculos do usuário em todas as organizações.
+- [x] Autenticação não permite acesso a recursos de uma organização externa.
+- [x] Membro lê dados permitidos, mas não administra a organização ou seus membros.
+- [x] Proprietário administra somente organizações em que possui esse papel.
+- [x] Vínculo e papel não são forjáveis por campos enviados pelo cliente.
+- [x] A API não deixa organizações órfãs ao criar ou alterar vínculos.
+- [x] Exclusão de vínculo não exclui conta, organização ou dados de outra equipe.
+- [x] Remover um vínculo revoga o acesso sem exigir expiração do JWT.
+- [x] Respostas de erro e regras de paginação seguem o contrato documentado.
+- [x] Testes antigos e novos passam no PostgreSQL e no GitHub Actions.
+- [x] Documentação, critérios e PRs refletem o comportamento entregue.
 
 ## Cuidados de implementação
 
@@ -188,8 +190,9 @@ Concluir cada entrega com seus testes e critérios antes de iniciar a seguinte:
 1 → 2 → 3 → 4. Uma entrega pode ser dividida em PRs menores conforme a revisão;
 não há datas, estimativas em dias ou quantidade de testes tratadas como compromisso.
 
-Próximo trabalho: Entrega 4, após a revisão e integração da Entrega 3,
-com validação do fluxo completo e fechamento dos critérios da sprint.
+As quatro entregas foram implementadas e validadas. Não há funcionalidades
+pendentes no escopo acordado da Sprint 2. O planejamento da próxima sprint
+será uma decisão separada.
 
 ## Progresso da Entrega 1 — 23/10/2026
 
@@ -254,9 +257,50 @@ migrações passaram; nenhuma mudança de modelo foi necessária.
 
 A auditoria somente leitura do banco de desenvolvimento encontrou zero
 organizações e zero sem proprietário ativo. Segredos, configurações do banco,
-modelos e migrações existentes permanecem preservados. A validação remota e o
-estado da revisão serão registrados no PR da Entrega 3. A Entrega 4 permanece
-para revisão do fluxo completo, exemplos integrados e fechamento dos critérios.
+modelos e migrações existentes permanecem preservados. O
+[CI #19](https://github.com/danielbramos4/taskflow-backend/actions/runs/40377163078)
+aprovou os 194 testes no PostgreSQL 17; a Entrega 3 foi integrada pelo PR #4.
+
+## Encerramento da Entrega 4 — 26/10/2026
+
+O README contém o contrato disponível, exemplos de entrada, campos de resposta,
+paginação, erros e um roteiro completo com três contas de desenvolvimento:
+criação de organização, inclusão e leitura por membro, rejeição de escrita,
+transferência de propriedade, proteção do último proprietário e revogação de
+acesso. O roteiro também confere que a conta removida mantém login, perfil e
+refresh JWT, sem recuperar o vínculo excluído.
+
+O novo teste integrado `tests/organizations/test_sprint2_flow.py` percorre esse
+ciclo usando os endpoints reais de login e refresh e preserva uma organização
+externa. A suíte completa aprovou **195 testes em 21,88 s** no PostgreSQL separado
+de testes: os 194 anteriores e esse aceite integrado. Inclui os 11 testes da
+Sprint 1 e os dez cenários de concorrência real da Entrega 3, sem testes ignorados.
+Ruff, formatação, `pip check`, Django e `makemigrations --check --dry-run`
+passaram. A inspeção das migrações aplicadas encontrou zero pendências.
+
+| Critério revisado | Evidência automatizada |
+| --- | --- |
+| Criação e proprietário atômicos | `test_api.py`: criação e rollback de falha do vínculo. |
+| Isolamento nas listagens e detalhes | `test_api.py`, `test_detail_api.py` e `test_membership_api.py`: usuários externos, superusuários e IDs de outras organizações. |
+| Leitura e escrita por papel da organização | `test_detail_api.py` e `test_membership_api.py`: membro recebe 403; proprietário de A não administra B como membro. |
+| Identidade, vínculo e papel não forjáveis | Testes de campos controlados pelo servidor, troca de usuário/organização e consultas que tentam ampliar acesso. |
+| Proprietário ativo preservado | `test_membership_api.py` e `test_membership_concurrency.py`: último proprietário, substituto inativo e saídas simultâneas. |
+| Remoção preserva conta e dados externos | `test_membership_api.py` e `test_sprint2_flow.py`: remoção só do vínculo, perfil/refresh funcionais e outra equipe intacta. |
+| Revogação sem renovar JWT | Testes de consulta/edição após mudança de papel ou remoção, incluindo revogação enquanto uma escrita espera pelo bloqueio. |
+| Paginação e respostas de erro | Testes de ordenação estável, contagem por organização, páginas inválidas, dados inválidos e métodos não oferecidos. |
+| Compatibilidade da fundação e fluxo completo | `tests/accounts/test_auth.py`, `test_models.py` e `test_sprint2_flow.py`, executados com toda a suíte. |
+
+As três entregas funcionais foram integradas após seus CIs aprovados. O PR de
+encerramento registra a execução remota do commit final e é integrado somente
+com os checks aprovados; o CI da `main` confirma o resultado após a integração.
+Não houve mudanças de código da aplicação, modelos, migrações, dependências ou
+infraestrutura nesta entrega. Os arquivos existentes fora da documentação foram
+comparados por hash e preservados, inclusive `.env` e configurações do banco.
+A auditoria de desenvolvimento encontrou zero organizações e nenhuma sem
+proprietário ativo. Nenhuma correção de dados ou remoção de volume foi necessária.
+
+Todos os critérios do escopo da Sprint 2 estão atendidos. As limitações
+administrativas fora desta API continuam documentadas em “Limites desta sprint”.
 
 ## Referências técnicas
 
