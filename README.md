@@ -4,7 +4,8 @@ Fundação do backend TaskFlow em Django, Django REST Framework e PostgreSQL.
 
 Repositório: [danielbramos4/taskflow-backend](https://github.com/danielbramos4/taskflow-backend).
 A fundação e os critérios concluídos estão em [Sprint 1](docs/sprint-1.md).
-O planejamento de organizações e permissões está em [Sprint 2](docs/sprint-2.md).
+Organizações e permissões foram concluídas na [Sprint 2](docs/sprint-2.md),
+com as quatro entregas e seus critérios de aceite validados.
 
 ## Requisitos
 
@@ -85,8 +86,8 @@ No VS Code, selecione `.venv/Scripts/python.exe` como interpretador Python.
 | PATCH | `/api/v1/organizations/{organization_id}/memberships/{membership_id}/` | Proprietário altera o papel de um membro. |
 | DELETE | `/api/v1/organizations/{organization_id}/memberships/{membership_id}/` | Proprietário remove um vínculo, preservando a conta. |
 
-As Entregas 1 a 3 da Sprint 2 oferecem organizações e administração de membros.
-A revisão do fluxo completo e dos critérios da sprint está na Entrega 4.
+As quatro entregas da Sprint 2 estão concluídas: organizações, administração
+de membros, validação do fluxo completo e fechamento dos critérios de aceite.
 
 ## API de organizações — Entrega 1
 
@@ -208,7 +209,48 @@ PATCH e DELETE recebem 405; no caminho individual, GET, POST e PUT recebem 405.
 Não há exceção para superusuários sem vínculo nem ampliação de acesso por
 parâmetros de consulta como `user_id` ou `organization_id`.
 
+## Fluxo completo de aceite — Entrega 4
+
+Para reproduzir manualmente, use três contas ativas de desenvolvimento já
+existentes: A (criador), B (colega) e C (usuário externo). Obtenha access e refresh
+de cada conta com `POST /api/v1/auth/token/`, usando suas credenciais localmente.
+Use `Authorization: Bearer <access>` da conta indicada em cada passo; não
+compartilhe os tokens. Consulte `GET /api/v1/auth/me/` de B para obter seu ID.
+
+Escolha um slug ainda não utilizado. Os nomes entre chaves abaixo são os IDs
+devolvidos pela API, não valores fixos a copiar.
+
+| Passo | Conta e requisição | Resultado esperado |
+| --- | --- | --- |
+| 1 | A: `POST /api/v1/organizations/` com `{"name":"Equipe demo","slug":"equipe-demo"}` | 201; guardar `id` como `{org}`; `my_role` é `owner`. |
+| 2 | A: `GET /api/v1/organizations/{org}/memberships/` | 200; guardar o `id` do vínculo de A como `{vinculo-a}`. |
+| 3 | C: `GET /api/v1/organizations/{org}/` | 404; a organização não aparece na listagem de C. |
+| 4 | A: `POST /api/v1/organizations/{org}/memberships/` com `{"user_id":<id-de-B>}` | 201; guardar `id` como `{vinculo-b}`; `role` é `member`. |
+| 5 | B: `GET /api/v1/organizations/{org}/` e `GET /api/v1/organizations/{org}/memberships/` | 200; B é `member` e a equipe tem dois vínculos. |
+| 6 | B: `PATCH /api/v1/organizations/{org}/` com `{"name":"Tentativa"}` | 403; o nome permanece igual. |
+| 7 | A: `PATCH /api/v1/organizations/{org}/` com `{"name":"Equipe atualizada"}` | 200; B consulta o nome atualizado. |
+| 8 | A: `PATCH /api/v1/organizations/{org}/memberships/{vinculo-b}/` com `{"role":"owner"}` | 200; com o mesmo JWT, B passa a consultar `my_role: owner` e pode editar a organização. |
+| 9 | A: `PATCH /api/v1/organizations/{org}/memberships/{vinculo-a}/` com `{"role":"member"}` | 200; B é o proprietário ativo. A agora recebe 403 ao editar a organização. |
+| 10 | B: `DELETE /api/v1/organizations/{org}/memberships/{vinculo-b}/` | 400; a tentativa de remover o último proprietário é rejeitada. |
+| 11 | B: `DELETE /api/v1/organizations/{org}/memberships/{vinculo-a}/` | 204; apenas o vínculo de A é removido. |
+| 12 | A: consultar novamente a organização e os membros com o mesmo JWT | 404; a listagem de organizações deixa de incluir a equipe. |
+| 13 | A: `POST /api/v1/auth/token/refresh/` com `{"refresh":"<refresh-de-A>"}` e depois `GET /api/v1/auth/me/` com o novo access | 200 em ambos; a conta continua existente e não recupera acesso à organização removida. |
+
+A listagem de membros usa `count`, `next`, `previous` e `results`. Os IDs dos
+vínculos são diferentes dos IDs de usuários. As regras de paginação, demais
+campos das respostas e erros 400/401/403/404/405 estão descritos nas seções acima.
+
+O teste automatizado reproduz esse fluxo com login JWT real, dados fictícios e
+o banco separado de testes; também verifica que dados de outra organização
+permanecem intactos. Para executá-lo em um novo PowerShell na raiz do projeto:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/organizations/test_sprint2_flow.py --reuse-db -v --tb=short
+```
+
 ## Validação local
+
+Abra um novo terminal PowerShell na raiz do repositório, onde está `manage.py`.
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip check
