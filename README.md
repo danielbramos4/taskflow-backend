@@ -89,11 +89,13 @@ No VS Code, selecione `.venv/Scripts/python.exe` como interpretador Python.
 | DELETE | `/api/v1/organizations/{organization_id}/memberships/{membership_id}/` | Proprietário remove um vínculo, preservando a conta. |
 | GET | `/api/v1/organizations/{organization_id}/projects/` | Participantes listam projetos da organização, com paginação. |
 | POST | `/api/v1/organizations/{organization_id}/projects/` | Proprietário cria projeto, com organização e autoria definidas no servidor. |
+| GET | `/api/v1/organizations/{organization_id}/projects/{project_id}/` | Participantes consultam um projeto dentro da organização autorizada. |
+| PATCH | `/api/v1/organizations/{organization_id}/projects/{project_id}/` | Proprietário altera somente nome e/ou descrição do projeto. |
 
 As quatro entregas da Sprint 2 estão concluídas: organizações, administração
 de membros, validação do fluxo completo e fechamento dos critérios de aceite.
-A Entrega 1 da Sprint 3 acrescenta criação e listagem de projetos. Consulta
-individual, edição e arquivamento ficam para as próximas entregas dessa sprint.
+As Entregas 1 e 2 da Sprint 3 oferecem criação, listagem, consulta e edição
+de projetos. Arquivamento e restauração ficam para a Entrega 3.
 
 ## API de organizações — Entrega 1
 
@@ -308,6 +310,51 @@ com autoria nula se a conta criadora for excluída administrativamente. A remoç
 de um vínculo da equipe não remove seus projetos. O modelo já possui o sinalizador
 de arquivamento, mas alterar esse campo pela API fica para a Entrega 3; projetos
 arquivados continuam visíveis aos participantes, sem expor dados privados da conta.
+
+## Consulta e edição de projetos — Sprint 3, Entrega 2
+
+`GET /api/v1/organizations/{organization_id}/projects/{project_id}/` exige JWT
+e participação na organização do caminho. Proprietários e membros recebem 200
+com os mesmos oito campos da criação. Autoria nula e projetos já arquivados
+também são consultáveis. O projeto deve pertencer à organização indicada;
+ser proprietário de ambas as organizações não permite trocar apenas o pai na URL.
+
+Somente proprietários podem enviar `PATCH` ao mesmo caminho. Exemplo:
+
+```json
+{
+  "description": "Descrição revisada do projeto."
+}
+```
+
+A resposta 200 contém o projeto atualizado. Campos omitidos mantêm seu valor;
+descrição vazia (`""`) limpa o texto. Um objeto vazio (`{}`) retorna 200 sem
+alterar os dados nem `updated_at`. Os limites de nome e descrição são os mesmos
+da criação. Nome vazio, valores null, limites excedidos e corpo que não é objeto
+JSON recebem 400 sem salvar alterações. Organização, autoria, ID, datas,
+`is_archived` e campos inesperados não são alteráveis e recebem 400.
+
+Membros recebem 403 ao editar. Usuários sem vínculo recebem 404 tanto para
+projetos existentes como inexistentes, inclusive superusuários. Quem possui
+vínculo recebe 404 ao informar projeto inexistente ou de outra organização.
+JWT ausente/inválido recebe 401. PUT, POST e DELETE no caminho individual recebem
+405. Falhas de integridade, inclusive no commit, retornam 500 com mensagem genérica
+e desfazem a edição.
+
+Ser criador do projeto não dá acesso sem vínculo nem permissão sem papel de
+proprietário. Mudanças de papel, promoção e remoção de vínculo passam a valer
+com o mesmo JWT. A escrita bloqueia a organização e consulta novamente o papel
+após a espera; a consulta do projeto fica limitada a essa organização. Parâmetros
+como `project_id`, `organization_id` ou `user_id` não mudam o alvo nem a identidade.
+Proprietários podem editar nome/descrição de projetos já arquivados sem alterar
+o sinalizador. A operação de arquivar/restaurar continua prevista para a Entrega 3.
+
+Esta entrega não muda modelos ou migrações. Para validar em novo PowerShell
+na raiz do repositório:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/projects --reuse-db -v --tb=short
+```
 
 ## Validação local
 
