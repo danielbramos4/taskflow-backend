@@ -7,8 +7,10 @@ organização, preservando o isolamento e os papéis entregues na Sprint 2.
 Prioridade escolhida pelo usuário: projetos por organização. Execução por
 entregas, sem prazo fixo. A Entrega 1 foi integrada à `main` pelo
 [PR #6](https://github.com/danielbramos4/taskflow-backend/pull/6), com CI aprovado.
-A Entrega 2 está implementada e validada localmente, para revisão no PR. As Entregas 3 e 4
-continuam planejadas: arquivamento/restauração e aceite completo.
+A Entrega 2 foi integrada à `main` pelo
+[PR #7](https://github.com/danielbramos4/taskflow-backend/pull/7), com CI aprovado.
+A Entrega 3 está implementada e validada localmente, para revisão no PR. A Entrega 4
+continua planejada para o aceite completo.
 
 ## Base disponível
 
@@ -78,8 +80,9 @@ ser editados por proprietários; arquivamento é uma marca de organização, nã
 uma exclusão ou bloqueio de edição. Não há filtros ou parâmetros que ampliem
 acesso a outras organizações.
 
-POST aceita somente `name` e `description`. PATCH da Entrega 2 aceita somente
-esses campos; a Entrega 3 acrescenta `is_archived` ao PATCH. Campos de identidade,
+POST aceita somente `name` e `description`. PATCH aceita esses campos e,
+com a Entrega 3, `is_archived`, restrito aos booleanos JSON true/false; strings,
+números e null são rejeitados. Campos de identidade,
 organização, autoria, datas e campos inesperados recebem 400. Corpo que não é
 objeto JSON, dados inválidos e limites excedidos recebem 400. Métodos não
 oferecidos recebem 405; não há DELETE nem PUT. IDs inexistentes e recursos fora
@@ -124,12 +127,12 @@ campos inválidos ou tentativa de transferir o projeto não modificam dados.
 
 **Resultado:** proprietários sinalizam projetos arquivados e podem restaurá-los.
 
-- [ ] Acrescentar `is_archived` booleano ao PATCH, mantendo POST ativo por padrão.
-- [ ] Garantir que arquivados continuam consultáveis e editáveis com as mesmas permissões.
-- [ ] Rejeitar valores de arquivamento inválidos e campos não permitidos.
-- [ ] Testar arquivar/restaurar, membro sem escrita e isolamento entre organizações.
-- [ ] Garantir que nenhum arquivamento exclui projeto, organização, conta ou vínculo.
-- [ ] Documentar o comportamento e conferir o CI do PR.
+- [x] Acrescentar `is_archived` booleano ao PATCH, mantendo POST ativo por padrão.
+- [x] Garantir que arquivados continuam consultáveis e editáveis com as mesmas permissões.
+- [x] Rejeitar valores de arquivamento inválidos e campos não permitidos.
+- [x] Testar arquivar/restaurar, membro sem escrita e isolamento entre organizações.
+- [x] Garantir que nenhum arquivamento exclui projeto, organização, conta ou vínculo.
+- [x] Documentar o comportamento e conferir o CI do PR.
 
 **Aceite:** proprietário alterna o sinalizador com 200, sem perder dados nem
 alterar vínculos. Membro recebe 403; externo recebe 404; DELETE continua 405.
@@ -200,7 +203,7 @@ credenciais permanece igual.
 README atualizado com a coleção disponível, validações e atualização segura
 de outra instalação no PowerShell. A execução remota e o estado da revisão
 ficam registrados no PR desta entrega. A criação/listagem foi integrada pelo PR #6.
-Próximo trabalho: Entrega 3, após revisão e integração da consulta/edição.
+Consulta e edição foram integradas pelo PR #7.
 
 ## Progresso da Entrega 2 — 26/10/2026
 
@@ -213,8 +216,9 @@ campos controlados pelo servidor. PATCH vazio mantém os dados e updated_at.
 A edição bloqueia a organização e consulta novamente vínculo/papel após a
 espera. Autoria não concede acesso independente: rebaixamento e remoção são
 observados com o mesmo JWT, assim como a promoção de membro a proprietário.
-O projeto pode ser consultado e editado se já estiver arquivado, mas alterar
-is_archived continua reservado à próxima entrega. IDs de projeto ou parâmetros
+O projeto pode ser consultado e editado se já estiver arquivado. A Entrega 2
+mantinha is_archived protegido; a Entrega 3 acrescenta sua alteração ao PATCH.
+IDs de projeto ou parâmetros
 de consulta não transferem o alvo entre organizações.
 
 A suíte local aprovou **304 testes em 29,92 s** no PostgreSQL separado de testes:
@@ -234,5 +238,39 @@ foi criado ou alterado nesse banco e nenhum volume foi removido.
 
 README atualizado com caminhos, exemplos, campos, erros e validação em novo
 PowerShell. A validação remota e o estado da revisão ficam registrados no PR
-desta entrega. Próximo trabalho: Entrega 3, após integrar consulta e edição,
-com arquivamento/restauração de projetos preservando as mesmas permissões.
+desta entrega. A consulta/edição foi integrada pelo PR #7. Próximo trabalho:
+Entrega 4, após revisar e integrar arquivamento/restauração.
+
+## Progresso da Entrega 3 — 26/10/2026
+
+Arquivamento/restauração implementados pelo PATCH individual, com booleanos
+JSON true/false. A criação mantém is_archived protegido, inclusive quando o
+cliente tenta informar false. Um serializer específico da edição acrescenta
+somente esse campo aos campos já permitidos, reutilizando atualização parcial,
+transação, bloqueio da organização e autorização existentes.
+
+Projetos arquivados continuam consultáveis, aparecem na coleção paginada e
+podem ser editados por proprietários. Arquivar/restaurar preserva a identidade,
+organização, autoria, conteúdo e vínculos, sem criar ou excluir registros.
+Valores inválidos e campos proibidos impedem toda a alteração; nome e descrição
+podem ser enviados junto com o sinalizador em uma mesma operação válida.
+
+A suíte local aprovou **350 testes em 29,12 s** no PostgreSQL separado de testes:
+304 anteriores e 46 novos. A cobertura nova verifica arquivar/restaurar, repetição
+da operação, preservação de registros e outra organização, consulta/edição de
+arquivados, booleanos estritos, rejeição no POST, campos inválidos combinados,
+papéis, autoria, JWT, superusuários e revogação com o mesmo token. Os testes de
+concorrência foram estendidos para arquivamento e restauração enquanto a escrita
+aguarda o bloqueio, com rebaixamento/remoção do solicitante; a falha de integridade
+adiada até o commit também foi validada para arquivamento, com rollback.
+
+Ruff, formatação, dependências, Django e verificações de migrações passaram.
+Modelos, migrações, configurações e demais arquivos fora do escopo foram
+preservados por comparação de hashes. A auditoria somente leitura encontrou
+zero organizações e zero projetos no banco de desenvolvimento, sem migrações
+pendentes. Nenhum registro de desenvolvimento ou volume foi alterado.
+
+README atualizado com exemplos de arquivar e restaurar, valores aceitos, erros,
+permissões e validação no PowerShell. A execução remota e o estado da revisão
+ficam registrados no PR desta entrega. Próximo trabalho: Entrega 4, após revisar
+e integrar o arquivamento, para validar o fluxo completo e fechar a Sprint 3.
