@@ -90,12 +90,12 @@ No VS Code, selecione `.venv/Scripts/python.exe` como interpretador Python.
 | GET | `/api/v1/organizations/{organization_id}/projects/` | Participantes listam projetos da organização, com paginação. |
 | POST | `/api/v1/organizations/{organization_id}/projects/` | Proprietário cria projeto, com organização e autoria definidas no servidor. |
 | GET | `/api/v1/organizations/{organization_id}/projects/{project_id}/` | Participantes consultam um projeto dentro da organização autorizada. |
-| PATCH | `/api/v1/organizations/{organization_id}/projects/{project_id}/` | Proprietário altera somente nome e/ou descrição do projeto. |
+| PATCH | `/api/v1/organizations/{organization_id}/projects/{project_id}/` | Proprietário edita nome/descrição e arquiva ou restaura o projeto. |
 
 As quatro entregas da Sprint 2 estão concluídas: organizações, administração
 de membros, validação do fluxo completo e fechamento dos critérios de aceite.
-As Entregas 1 e 2 da Sprint 3 oferecem criação, listagem, consulta e edição
-de projetos. Arquivamento e restauração ficam para a Entrega 3.
+As Entregas 1 a 3 da Sprint 3 oferecem criação, listagem, consulta, edição,
+arquivamento e restauração de projetos. O aceite completo fica para a Entrega 4.
 
 ## API de organizações — Entrega 1
 
@@ -307,9 +307,9 @@ um novo PowerShell na raiz do repositório, após revisar/aplicar o código:
 Projetos não podem ser transferidos ou excluídos pela API desta entrega.
 O modelo protege a exclusão da organização com projetos e preserva o projeto
 com autoria nula se a conta criadora for excluída administrativamente. A remoção
-de um vínculo da equipe não remove seus projetos. O modelo já possui o sinalizador
-de arquivamento, mas alterar esse campo pela API fica para a Entrega 3; projetos
-arquivados continuam visíveis aos participantes, sem expor dados privados da conta.
+de um vínculo da equipe não remove seus projetos. O arquivamento da Entrega 3
+preserva os registros e mantém os projetos visíveis aos participantes, sem expor
+dados privados da conta.
 
 ## Consulta e edição de projetos — Sprint 3, Entrega 2
 
@@ -331,8 +331,9 @@ A resposta 200 contém o projeto atualizado. Campos omitidos mantêm seu valor;
 descrição vazia (`""`) limpa o texto. Um objeto vazio (`{}`) retorna 200 sem
 alterar os dados nem `updated_at`. Os limites de nome e descrição são os mesmos
 da criação. Nome vazio, valores null, limites excedidos e corpo que não é objeto
-JSON recebem 400 sem salvar alterações. Organização, autoria, ID, datas,
-`is_archived` e campos inesperados não são alteráveis e recebem 400.
+JSON recebem 400 sem salvar alterações. Organização, autoria, ID, datas
+e campos inesperados não são alteráveis e recebem 400. A Entrega 3 acrescenta
+o sinalizador `is_archived` ao PATCH, conforme a seção seguinte.
 
 Membros recebem 403 ao editar. Usuários sem vínculo recebem 404 tanto para
 projetos existentes como inexistentes, inclusive superusuários. Quem possui
@@ -347,13 +348,64 @@ com o mesmo JWT. A escrita bloqueia a organização e consulta novamente o papel
 após a espera; a consulta do projeto fica limitada a essa organização. Parâmetros
 como `project_id`, `organization_id` ou `user_id` não mudam o alvo nem a identidade.
 Proprietários podem editar nome/descrição de projetos já arquivados sem alterar
-o sinalizador. A operação de arquivar/restaurar continua prevista para a Entrega 3.
+o sinalizador. Arquivamento e restauração estão descritos na Entrega 3 abaixo.
 
 Esta entrega não muda modelos ou migrações. Para validar em novo PowerShell
 na raiz do repositório:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest tests/projects --reuse-db -v --tb=short
+```
+
+## Arquivamento e restauração — Sprint 3, Entrega 3
+
+Proprietários arquivam e restauram projetos no mesmo caminho de edição:
+`PATCH /api/v1/organizations/{organization_id}/projects/{project_id}/`.
+
+Para arquivar:
+
+```json
+{
+  "is_archived": true
+}
+```
+
+Para restaurar:
+
+```json
+{
+  "is_archived": false
+}
+```
+
+A resposta 200 contém o projeto com o sinalizador atualizado. São aceitos
+somente os booleanos JSON `true` e `false`; strings como `"true"`, números como
+`1`/`0`, null, listas e objetos recebem 400, sem salvar alterações. O sinalizador
+é opcional no PATCH: se omitido, mantém seu valor. Repetir o mesmo valor retorna
+200 sem duplicar nem remover registros. O POST continua aceitando somente nome
+e descrição, criando projeto ativo; enviar `is_archived`, mesmo false, recebe 400.
+
+Arquivar preserva nome, descrição, autoria, organização e vínculos da equipe.
+Projetos arquivados continuam na listagem paginada e podem ser consultados por
+participantes e editados por proprietários. O arquivamento organiza o trabalho
+e pode ser revertido; ele não revoga acesso. DELETE continua recebendo 405.
+
+É possível combinar nome, descrição e `is_archived` no mesmo PATCH. Todos os
+campos são validados antes de salvar: um campo inválido ou proibido desfaz toda
+a alteração. Atualizações usam a mesma transação e verificação de acesso da
+edição, inclusive após a espera pelo bloqueio. Falhas de integridade também
+desfazem a alteração e retornam mensagem genérica.
+
+JWT inválido/ausente recebe 401; membro tentando arquivar/restaurar recebe 403;
+usuário sem vínculo ou projeto fora da organização do caminho recebe 404.
+Autoria e superusuário sem vínculo não concedem privilégios. Promoção,
+rebaixamento e remoção de vínculo passam a valer com o mesmo JWT.
+
+O sinalizador já existe no modelo; esta entrega não requer migração. Para
+validar em um novo PowerShell na raiz do repositório:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/projects/test_archive_api.py tests/projects/test_concurrency.py --reuse-db -v --tb=short
 ```
 
 ## Validação local

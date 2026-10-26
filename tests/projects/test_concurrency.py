@@ -20,7 +20,7 @@ pytestmark = [
 ]
 
 
-def write_project_in_separate_connection(token, url, backend_ids, method):
+def write_project_in_separate_connection(token, url, backend_ids, method, payload):
     try:
         with connection.cursor() as cursor:
             cursor.execute("SET statement_timeout = '15s'")
@@ -29,26 +29,36 @@ def write_project_in_separate_connection(token, url, backend_ids, method):
             backend_ids.put(cursor.fetchone()[0])
         client = APIClient()
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
-        return getattr(client, method)(
-            url, {"name": "Pending project"}, format="json"
-        ).status_code
+        return getattr(client, method)(url, payload, format="json").status_code
     finally:
         connections.close_all()
 
 
 @pytest.mark.parametrize("revocation", ["demote", "remove"])
-@pytest.mark.parametrize("method", ["post", "patch"])
+@pytest.mark.parametrize(
+    "method,payload",
+    [
+        ("post", {"name": "Pending project"}),
+        ("patch", {"name": "Pending project"}),
+        ("patch", {"is_archived": True}),
+        ("patch", {"is_archived": False}),
+    ],
+)
 def test_write_rechecks_access_after_waiting_for_organization_lock(
-    organization, owner, outsider, url, revocation, method
+    organization, owner, outsider, url, revocation, method, payload
 ):
     Membership.objects.create(organization=organization, user=outsider, role="owner")
     actor = Membership.objects.get(organization=organization, user=owner)
     token = str(AccessToken.for_user(owner))
     if method == "patch":
         project = Project.objects.create(
-            organization=organization, created_by=owner, name="Original"
+            organization=organization,
+            created_by=owner,
+            name="Original",
+            is_archived=payload.get("is_archived") is False,
         )
         original_updated_at = project.updated_at
+        original_archived = project.is_archived
         url = reverse(
             "projects:project-detail",
             kwargs={"organization_id": organization.pk, "project_id": project.pk},
@@ -61,7 +71,12 @@ def test_write_rechecks_access_after_waiting_for_organization_lock(
                 cursor.execute("SELECT pg_backend_pid()")
                 blocker_id = cursor.fetchone()[0]
             future = pool.submit(
-                write_project_in_separate_connection, token, url, backend_ids, method
+                write_project_in_separate_connection,
+                token,
+                url,
+                backend_ids,
+                method,
+                payload,
             )
             worker_id = backend_ids.get(timeout=10)
             deadline = monotonic() + 8
@@ -88,6 +103,7 @@ def test_write_rechecks_access_after_waiting_for_organization_lock(
         project.refresh_from_db()
         assert project.name == "Original"
         assert project.updated_at == original_updated_at
+        assert project.is_archived is original_archived
         assert Project.objects.count() == 1
     assert Membership.objects.filter(
         organization=organization, user=outsider, role="owner"
@@ -114,8 +130,11 @@ def test_deferred_foreign_key_failure_returns_generic_error_and_rolls_back(
     assert not Project.objects.exists()
 
 
+@pytest.mark.parametrize(
+    "payload", [{"name": "Rejected at commit"}, {"is_archived": True}]
+)
 def test_deferred_update_failure_returns_generic_error_and_preserves_project(
-    api_client, organization, owner
+    api_client, organization, owner, payload
 ):
     project = Project.objects.create(
         organization=organization,
@@ -136,7 +155,7 @@ def test_deferred_update_failure_returns_generic_error_and_preserves_project(
         return save_project(instance, *args, **kwargs)
 
     with patch("apps.projects.serializers.Project.save", new=save_with_missing_author):
-        response = api_client.patch(url, {"name": "Rejected at commit"}, format="json")
+        response = api_client.patch(url, payload, format="json")
 
     assert response.status_code == 500
     assert str(response.data["detail"]) == "Não foi possível atualizar o projeto."
@@ -145,3 +164,4 @@ def test_deferred_update_failure_returns_generic_error_and_preserves_project(
     assert project.description == "Original description"
     assert project.created_by_id == owner.pk
     assert project.updated_at == original_updated_at
+    assert project.is_archived is False

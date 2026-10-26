@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from apps.organizations.views import OrganizationAccessMixin
 from apps.projects.models import Project
 from apps.projects.pagination import ProjectPagination
-from apps.projects.serializers import ProjectSerializer
+from apps.projects.serializers import ProjectSerializer, ProjectUpdateSerializer
 
 
 class ProjectAccessMixin(OrganizationAccessMixin):
@@ -43,6 +43,7 @@ class ProjectListCreateView(ProjectAccessMixin, ListCreateAPIView):
 
 
 class ProjectDetailView(ProjectAccessMixin, GenericAPIView):
+    serializer_class = ProjectUpdateSerializer
     http_method_names = ["get", "patch", "head", "options"]
 
     def get(self, request, *args, **kwargs):

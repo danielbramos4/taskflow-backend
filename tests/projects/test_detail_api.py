@@ -262,7 +262,7 @@ def test_patch_accepts_name_and_description_at_field_limits(api_client, detail_u
         "unexpected",
     ],
 )
-def test_patch_rejects_identity_transfer_archive_and_unknown_fields(
+def test_patch_rejects_protected_unknown_or_invalid_fields(
     api_client, project, detail_url, field
 ):
     response = api_client.patch(
