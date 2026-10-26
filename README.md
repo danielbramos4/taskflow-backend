@@ -80,9 +80,13 @@ No VS Code, selecione `.venv/Scripts/python.exe` como interpretador Python.
 | POST | `/api/v1/organizations/` | Cria organização e vínculo de proprietário para o solicitante. |
 | GET | `/api/v1/organizations/{organization_id}/` | Consulta uma organização da qual o solicitante participa. |
 | PATCH | `/api/v1/organizations/{organization_id}/` | Proprietário altera nome e/ou slug da organização. |
+| GET | `/api/v1/organizations/{organization_id}/memberships/` | Participantes consultam membros e papéis, com paginação. |
+| POST | `/api/v1/organizations/{organization_id}/memberships/` | Proprietário adiciona uma conta ativa existente. |
+| PATCH | `/api/v1/organizations/{organization_id}/memberships/{membership_id}/` | Proprietário altera o papel de um membro. |
+| DELETE | `/api/v1/organizations/{organization_id}/memberships/{membership_id}/` | Proprietário remove um vínculo, preservando a conta. |
 
-As Entregas 1 e 2 da Sprint 2 oferecem criação, listagem, consulta e edição de
-organizações. A administração de membros está prevista para a Entrega 3.
+As Entregas 1 a 3 da Sprint 2 oferecem organizações e administração de membros.
+A revisão do fluxo completo e dos critérios da sprint está na Entrega 4.
 
 ## API de organizações — Entrega 1
 
@@ -144,6 +148,65 @@ O vínculo e o papel são consultados a cada requisição: mudanças de papel e
 remoção de vínculo passam a valer com o mesmo JWT na próxima requisição.
 Parâmetros como `user_id`, `my_role` ou `organization_id` não trocam a identidade
 nem o recurso indicado no caminho. A API desta entrega não altera vínculos.
+
+## Administração de membros — Entrega 3
+
+Todas as operações exigem JWT. Proprietários e membros podem consultar
+`GET /api/v1/organizations/{organization_id}/memberships/`. A resposta é paginada
+com `count`, `next`, `previous` e `results`, 20 vínculos por página e ordenação
+por `created_at, id`. Cada vínculo contém somente `id`, `user_id`, `username`,
+`role` e `created_at`; não inclui e-mail, senha ou tokens.
+
+Somente proprietários administram os vínculos da organização correspondente.
+Para adicionar uma conta ativa já existente, envie a
+`POST /api/v1/organizations/{organization_id}/memberships/`:
+
+```json
+{
+  "user_id": 42,
+  "role": "member"
+}
+```
+
+Substitua `42` pelo ID da conta escolhida. `role` aceita `member` e `owner`;
+se omitido, o papel será `member`. A resposta 201 contém o vínculo criado.
+Usuário inexistente/inativo ou vínculo já existente recebe 400. Incluir um
+vínculo duplicado não altera seu papel e não cria outra conta.
+
+Para promover um membro ou rebaixar um proprietário, envie somente o papel a
+`PATCH /api/v1/organizations/{organization_id}/memberships/{membership_id}/`:
+
+```json
+{
+  "role": "owner"
+}
+```
+
+A resposta 200 contém o vínculo atualizado. Um objeto vazio mantém o papel.
+`user_id`, `organization_id`, `id`, `username`, datas e campos inesperados não
+podem ser alterados e recebem 400. O ID do vínculo deve pertencer à organização
+do caminho; trocar apenas o ID da organização não concede acesso ao vínculo.
+
+`DELETE` no mesmo caminho retorna 204 sem conteúdo e remove somente o vínculo.
+A conta, a organização e os vínculos em outras equipes permanecem. A remoção
+de acesso vale na próxima requisição, mesmo com o JWT anterior ainda válido.
+Membros não têm uma operação separada para sair por conta própria nesta sprint.
+
+Rebaixar ou remover o último proprietário ativo recebe 400. Primeiro promova
+outro usuário ativo a `owner`; depois o proprietário anterior pode ser rebaixado
+ou removido. Um proprietário inativo não conta como substituto. As operações de
+escrita usam uma transação e o bloqueio da mesma organização no PostgreSQL,
+com nova verificação de acesso após a espera. Alterações simultâneas pela API
+preservam pelo menos um proprietário ativo. Mudanças administrativas nas contas
+fora desta API, como desativar um proprietário, exigem uma regra própria futura.
+
+Sem JWT válido: 401. Participante sem papel de proprietário ao escrever: 403.
+Usuário sem vínculo, organização inexistente ou vínculo fora da organização: 404.
+Campos inválidos, papel inválido, duplicidade e último proprietário ativo: 400.
+Falhas de integridade inesperadas: 500 com mensagem genérica. Na coleção, PUT,
+PATCH e DELETE recebem 405; no caminho individual, GET, POST e PUT recebem 405.
+Não há exceção para superusuários sem vínculo nem ampliação de acesso por
+parâmetros de consulta como `user_id` ou `organization_id`.
 
 ## Validação local
 
