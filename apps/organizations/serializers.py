@@ -43,3 +43,23 @@ class OrganizationSerializer(serializers.ModelSerializer):
 
         organization.my_role = Membership.Role.OWNER
         return organization
+
+    def update(self, instance, validated_data):
+        try:
+            with transaction.atomic():
+                for field, value in validated_data.items():
+                    setattr(instance, field, value)
+                if validated_data:
+                    instance.save(update_fields=[*validated_data, "updated_at"])
+        except IntegrityError:
+            if "slug" in validated_data and (
+                Organization.objects.filter(slug=validated_data["slug"])
+                .exclude(pk=instance.pk)
+                .exists()
+            ):
+                raise serializers.ValidationError(
+                    {"slug": ["Já existe uma organização com este slug."]}
+                ) from None
+            raise APIException("Não foi possível atualizar a organização.") from None
+
+        return instance
