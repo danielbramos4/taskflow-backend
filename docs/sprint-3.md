@@ -9,8 +9,10 @@ entregas, sem prazo fixo. A Entrega 1 foi integrada à `main` pelo
 [PR #6](https://github.com/danielbramos4/taskflow-backend/pull/6), com CI aprovado.
 A Entrega 2 foi integrada à `main` pelo
 [PR #7](https://github.com/danielbramos4/taskflow-backend/pull/7), com CI aprovado.
-A Entrega 3 está implementada e validada localmente, para revisão no PR. A Entrega 4
-continua planejada para o aceite completo.
+A Entrega 3 foi integrada à `main` pelo
+[PR #8](https://github.com/danielbramos4/taskflow-backend/pull/8), com CI aprovado.
+As quatro entregas e os critérios de aceite foram concluídos em 26/10/2026.
+O encerramento acrescenta o teste do fluxo completo e a documentação de aceite.
 
 ## Base disponível
 
@@ -139,28 +141,28 @@ alterar vínculos. Membro recebe 403; externo recebe 404; DELETE continua 405.
 
 ## Entrega 4 — validar o fluxo e encerrar a sprint
 
-- [ ] Documentar um fluxo completo com organização, projeto, membro e arquivamento.
-- [ ] Validar login/refresh, gestão de organizações/membros e os 195 testes da base.
-- [ ] Validar papéis, isolamento, revogação e persistência de projetos.
-- [ ] Conferir que não há alteração de modelo sem migração nem migração destrutiva.
-- [ ] Aprovar Ruff, formatação, dependências, Django, Pytest e GitHub Actions.
-- [ ] Integrar cada entrega somente após seus checks e registrar as evidências finais.
-- [ ] Revisar e fechar os critérios abaixo, sem ampliar para tarefas.
+- [x] Documentar um fluxo completo com organização, projeto, membro e arquivamento.
+- [x] Validar login/refresh, gestão de organizações/membros e os 195 testes da base.
+- [x] Validar papéis, isolamento, revogação e persistência de projetos.
+- [x] Conferir que não há alteração de modelo sem migração nem migração destrutiva.
+- [x] Aprovar Ruff, formatação, dependências, Django, Pytest e GitHub Actions.
+- [x] Integrar cada entrega somente após seus checks e registrar as evidências finais.
+- [x] Revisar e fechar os critérios abaixo, sem ampliar para tarefas.
 
 ## Critérios de aceitação da sprint
 
-- [ ] Proprietário cria projeto somente na organização em que possui esse papel.
-- [ ] Nome, descrição, organização, autor e datas seguem o contrato.
-- [ ] Participantes consultam apenas os projetos da organização autorizada.
-- [ ] Projeto de outra organização não é acessível pela troca de IDs no caminho.
-- [ ] Membro não cria, edita, arquiva ou restaura projetos.
-- [ ] Autoria não substitui participação nem papel para conceder acesso.
-- [ ] Revogação de vínculo/papel vale com o mesmo JWT e após espera nas escritas.
-- [ ] Arquivamento/restauração preservam os dados e respeitam os papéis.
-- [ ] Paginação e erros seguem o contrato documentado.
-- [ ] Sprints anteriores e testes novos passam no PostgreSQL e no CI.
-- [ ] Migrações são aditivas; configurações, segredos e volumes existentes preservados.
-- [ ] Documentação e PRs refletem o que foi efetivamente entregue.
+- [x] Proprietário cria projeto somente na organização em que possui esse papel.
+- [x] Nome, descrição, organização, autor e datas seguem o contrato.
+- [x] Participantes consultam apenas os projetos da organização autorizada.
+- [x] Projeto de outra organização não é acessível pela troca de IDs no caminho.
+- [x] Membro não cria, edita, arquiva ou restaura projetos.
+- [x] Autoria não substitui participação nem papel para conceder acesso.
+- [x] Revogação de vínculo/papel vale com o mesmo JWT e após espera nas escritas.
+- [x] Arquivamento/restauração preservam os dados e respeitam os papéis.
+- [x] Paginação e erros seguem o contrato documentado.
+- [x] Sprints anteriores e testes novos passam no PostgreSQL e no CI.
+- [x] Migrações são aditivas; configurações, segredos e volumes existentes preservados.
+- [x] Documentação e PRs refletem o que foi efetivamente entregue.
 
 ## Limites e sequência
 
@@ -238,8 +240,8 @@ foi criado ou alterado nesse banco e nenhum volume foi removido.
 
 README atualizado com caminhos, exemplos, campos, erros e validação em novo
 PowerShell. A validação remota e o estado da revisão ficam registrados no PR
-desta entrega. A consulta/edição foi integrada pelo PR #7. Próximo trabalho:
-Entrega 4, após revisar e integrar arquivamento/restauração.
+desta entrega. A consulta/edição foi integrada pelo PR #7; o arquivamento e o
+encerramento foram realizados nas entregas seguintes.
 
 ## Progresso da Entrega 3 — 26/10/2026
 
@@ -272,5 +274,44 @@ pendentes. Nenhum registro de desenvolvimento ou volume foi alterado.
 
 README atualizado com exemplos de arquivar e restaurar, valores aceitos, erros,
 permissões e validação no PowerShell. A execução remota e o estado da revisão
-ficam registrados no PR desta entrega. Próximo trabalho: Entrega 4, após revisar
-e integrar o arquivamento, para validar o fluxo completo e fechar a Sprint 3.
+ficam registrados no PR #8, integrado à main. O
+[CI #33](https://github.com/danielbramos4/taskflow-backend/actions/runs/40407772795)
+aprovou os 350 testes no PostgreSQL 17 para o commit `0aaabe6`.
+
+## Encerramento — Entrega 4, 26/10/2026
+
+O README documenta o fluxo completo de organizações, projetos, membros e
+arquivamento. O teste `tests/projects/test_sprint3_flow.py` executa esse fluxo
+pelas APIs, com login JWT real para três contas fictícias no banco de testes.
+Ele valida criação/edição, arquivamento/restauração, isolamento de outra equipe,
+promoção, rebaixamento e remoção do criador com os mesmos tokens. A renovação do
+JWT preserva a conta e não devolve acesso à organização. Conteúdo, autoria,
+organização, data de criação e projeto da outra equipe permanecem preservados.
+
+A suíte local aprovou **351 testes em 36,83 s** no PostgreSQL separado de
+testes: os 350 anteriores e um fluxo integrado novo, sem falhas ou testes
+ignorados. Ruff, formatação (52 arquivos), dependências, Django e consistência
+entre modelos e migrações passaram.
+
+O encerramento altera somente README, este registro e o novo teste integrado.
+Nenhum código de aplicação, modelo, migração, configuração ou teste anterior
+foi alterado. A comparação de hashes preservou os 64 arquivos protegidos,
+incluindo `.env`, Compose e configurações. O `.env` continua ignorado e fora do
+Git. A auditoria somente leitura do banco local confirmou ausência de migrações
+pendentes e de organizações sem proprietário ativo; nenhum dado de demonstração
+foi inserido ou alterado. Senhas e volumes existentes foram preservados.
+
+| Critério | Evidência automatizada |
+| --- | --- |
+| Criação, campos e identidade | `tests/projects/test_models.py` e `test_api.py` |
+| Leitura, edição, papéis por organização e IDs isolados | `tests/projects/test_api.py` e `test_detail_api.py` |
+| Arquivamento/restauração e preservação | `tests/projects/test_archive_api.py` |
+| Revogação após bloqueio e rollback real no PostgreSQL | `tests/projects/test_concurrency.py` |
+| Login, refresh e gestão de organizações/membros anteriores | `tests/accounts/` e `tests/organizations/` |
+| Fluxo completo, autoria sem privilégio e tokens após revogação | `tests/projects/test_sprint3_flow.py` |
+
+As entregas funcionais foram integradas pelos PRs #6, #7 e #8 somente após o
+CI aprovado. O PR de encerramento registra o commit exato e a execução aprovada
+dos checks antes da integração; a main também é conferida após o merge.
+Sprint 3 encerrada no escopo de projetos por organização. Tarefas e demais
+funcionalidades futuras permanecem fora desta entrega.
