@@ -6,6 +6,8 @@ Repositório: [danielbramos4/taskflow-backend](https://github.com/danielbramos4/
 A fundação e os critérios concluídos estão em [Sprint 1](docs/sprint-1.md).
 Organizações e permissões foram concluídas na [Sprint 2](docs/sprint-2.md),
 com as quatro entregas e seus critérios de aceite validados.
+O planejamento e o andamento de projetos por organização estão na
+[Sprint 3](docs/sprint-3.md).
 
 ## Requisitos
 
@@ -85,9 +87,13 @@ No VS Code, selecione `.venv/Scripts/python.exe` como interpretador Python.
 | POST | `/api/v1/organizations/{organization_id}/memberships/` | Proprietário adiciona uma conta ativa existente. |
 | PATCH | `/api/v1/organizations/{organization_id}/memberships/{membership_id}/` | Proprietário altera o papel de um membro. |
 | DELETE | `/api/v1/organizations/{organization_id}/memberships/{membership_id}/` | Proprietário remove um vínculo, preservando a conta. |
+| GET | `/api/v1/organizations/{organization_id}/projects/` | Participantes listam projetos da organização, com paginação. |
+| POST | `/api/v1/organizations/{organization_id}/projects/` | Proprietário cria projeto, com organização e autoria definidas no servidor. |
 
 As quatro entregas da Sprint 2 estão concluídas: organizações, administração
 de membros, validação do fluxo completo e fechamento dos critérios de aceite.
+A Entrega 1 da Sprint 3 acrescenta criação e listagem de projetos. Consulta
+individual, edição e arquivamento ficam para as próximas entregas dessa sprint.
 
 ## API de organizações — Entrega 1
 
@@ -247,6 +253,61 @@ permanecem intactos. Para executá-lo em um novo PowerShell na raiz do projeto:
 ```powershell
 .\.venv\Scripts\python.exe -m pytest tests/organizations/test_sprint2_flow.py --reuse-db -v --tb=short
 ```
+
+## Projetos por organização — Sprint 3, Entrega 1
+
+As operações exigem JWT e vínculo com a organização do caminho. Proprietários
+podem criar; proprietários e membros podem consultar a coleção. A autoria é
+um registro histórico e não substitui o vínculo ou o papel para conceder acesso.
+
+Para criar, envie JSON a
+`POST /api/v1/organizations/{organization_id}/projects/`:
+
+```json
+{
+  "name": "Portal interno",
+  "description": "Organizar a primeira versão do portal da equipe."
+}
+```
+
+A resposta 201 contém `id`, `organization_id`, `name`, `description`,
+`is_archived`, `created_by_id`, `created_at` e `updated_at`. Organização vem do
+caminho, autor vem do JWT e `is_archived` começa como false. O cliente só pode
+enviar `name` e `description`. Nome é obrigatório, tem até 150 caracteres e
+não pode ficar vazio após retirar espaços nas extremidades. Descrição é
+opcional, tem até 5.000 caracteres, padrão vazio e não aceita null. Nomes podem
+se repetir; cada projeto possui seu próprio ID.
+
+`GET` no mesmo caminho retorna `count`, `next`, `previous` e `results`, com
+20 projetos por página e ordenação por `name, id`. Use `?page=2` para a próxima
+página. Organização sem projetos retorna 200 com `results: []`. Parâmetros como
+`organization_id`, `created_by_id` e `user_id` não alteram o escopo ou a identidade.
+
+Erros: JWT ausente/inválido recebe 401; membro tentando criar recebe 403;
+organização inexistente ou sem vínculo recebe 404, inclusive para superusuários.
+Dados inválidos, limites excedidos, corpo que não é objeto JSON e campos
+controlados pelo servidor recebem 400, sem criar projeto. PUT, PATCH e DELETE
+na coleção recebem 405. Falhas de integridade inesperadas recebem 500 com
+mensagem genérica, inclusive quando a validação do banco falha no encerramento
+da transação. Escritas bloqueiam a organização e conferem novamente o
+papel após a espera; revogações de acesso passam a valer com o mesmo JWT.
+
+A migração `projects.0001_initial` cria somente a tabela nova e seus vínculos e
+índices. Não altera as tabelas existentes. Para atualizar outra instalação em
+um novo PowerShell na raiz do repositório, após revisar/aplicar o código:
+
+```powershell
+.\.venv\Scripts\python.exe manage.py migrate --plan
+.\.venv\Scripts\python.exe manage.py migrate projects
+.\.venv\Scripts\python.exe -m pytest tests/projects --reuse-db -v --tb=short
+```
+
+Projetos não podem ser transferidos ou excluídos pela API desta entrega.
+O modelo protege a exclusão da organização com projetos e preserva o projeto
+com autoria nula se a conta criadora for excluída administrativamente. A remoção
+de um vínculo da equipe não remove seus projetos. O modelo já possui o sinalizador
+de arquivamento, mas alterar esse campo pela API fica para a Entrega 3; projetos
+arquivados continuam visíveis aos participantes, sem expor dados privados da conta.
 
 ## Validação local
 

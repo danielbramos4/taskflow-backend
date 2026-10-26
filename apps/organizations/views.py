@@ -31,19 +31,6 @@ class OrganizationAccessMixin:
     def get_queryset(self):
         return self.get_organization_queryset()
 
-
-class OrganizationListCreateView(OrganizationAccessMixin, ListCreateAPIView):
-    pagination_class = OrganizationPagination
-
-
-class OrganizationDetailView(OrganizationAccessMixin, RetrieveUpdateAPIView):
-    lookup_url_kwarg = "organization_id"
-    http_method_names = ["get", "patch", "head", "options"]
-
-
-class MembershipAccessMixin(OrganizationAccessMixin):
-    serializer_class = MembershipSerializer
-
     def get_organization(self, *, for_update=False):
         organization_id = self.kwargs["organization_id"]
         if for_update:
@@ -56,6 +43,19 @@ class MembershipAccessMixin(OrganizationAccessMixin):
         )
         self.check_object_permissions(self.request, organization)
         return organization
+
+
+class OrganizationListCreateView(OrganizationAccessMixin, ListCreateAPIView):
+    pagination_class = OrganizationPagination
+
+
+class OrganizationDetailView(OrganizationAccessMixin, RetrieveUpdateAPIView):
+    lookup_url_kwarg = "organization_id"
+    http_method_names = ["get", "patch", "head", "options"]
+
+
+class MembershipAccessMixin(OrganizationAccessMixin):
+    serializer_class = MembershipSerializer
 
     def get_queryset(self):
         return (
