@@ -6,8 +6,8 @@ Repositório: [danielbramos4/taskflow-backend](https://github.com/danielbramos4/
 A fundação e os critérios concluídos estão em [Sprint 1](docs/sprint-1.md).
 Organizações e permissões foram concluídas na [Sprint 2](docs/sprint-2.md),
 com as quatro entregas e seus critérios de aceite validados.
-O planejamento e o andamento de projetos por organização estão na
-[Sprint 3](docs/sprint-3.md).
+Projetos por organização foram concluídos na [Sprint 3](docs/sprint-3.md),
+com as quatro entregas e seus critérios de aceite validados.
 
 ## Requisitos
 
@@ -94,8 +94,8 @@ No VS Code, selecione `.venv/Scripts/python.exe` como interpretador Python.
 
 As quatro entregas da Sprint 2 estão concluídas: organizações, administração
 de membros, validação do fluxo completo e fechamento dos critérios de aceite.
-As Entregas 1 a 3 da Sprint 3 oferecem criação, listagem, consulta, edição,
-arquivamento e restauração de projetos. O aceite completo fica para a Entrega 4.
+As quatro entregas da Sprint 3 estão concluídas: criação, listagem, consulta,
+edição, arquivamento/restauração de projetos e validação do fluxo completo.
 
 ## API de organizações — Entrega 1
 
@@ -407,6 +407,42 @@ validar em um novo PowerShell na raiz do repositório:
 ```powershell
 .\.venv\Scripts\python.exe -m pytest tests/projects/test_archive_api.py tests/projects/test_concurrency.py --reuse-db -v --tb=short
 ```
+
+## Fluxo completo de aceite de projetos — Sprint 3, Entrega 4
+
+Use três contas ativas de desenvolvimento já existentes: A (criador), B
+(participante) e C (outra equipe). Faça login de cada conta em `/api/v1/auth/token/`
+e envie seu access token como `Authorization: Bearer <access>`. Confira o perfil
+em `/api/v1/auth/me/`. Use nomes/slugs novos para não afetar dados existentes.
+Guarde os IDs retornados; os caminhos abaixo usam esses IDs, não nomes.
+
+| Passo | Conta e operação | Resultado esperado |
+| --- | --- | --- |
+| 1 | A cria organização em `POST /api/v1/organizations/` com nome e slug próprios. | 201; A tem papel owner. |
+| 2 | C cria outra organização e um projeto nela. | 201; projeto privado de C preservado durante todo o fluxo. |
+| 3 | A cria projeto em `POST /api/v1/organizations/{org_a}/projects/` com `name` e `description`. | 201; ativo, organização do caminho e autoria de A. |
+| 4 | C consulta coleção/detalhe de A; A troca o ID do projeto pelo de C no caminho de A. | 404 em todos os casos; nenhum dado externo exposto. |
+| 5 | A adiciona B por `POST /api/v1/organizations/{org_a}/memberships/`, com `user_id` de B. | 201; B recebe papel member. Guarde o ID do vínculo retornado. |
+| 6 | B lista e consulta o projeto; tenta criar, editar, arquivar e restaurar. | Leitura 200; escritas 403. |
+| 7 | A altera somente `name` no PATCH do projeto. | 200; descrição preservada. B consulta o novo nome. |
+| 8 | A envia `{"is_archived":true}`, edita a descrição e depois envia `{"is_archived":false}`. | 200; B vê o arquivado na coleção/detalhe; restauração preserva conteúdo e vínculos. |
+| 9 | A promove B por PATCH do vínculo, com `{"role":"owner"}`. B arquiva e restaura com seu mesmo JWT. | 200; autoria continua sendo A. |
+| 10 | B rebaixa o vínculo de A com `{"role":"member"}`. A tenta editar/arquivar. | A ainda lê com 200; escritas recebem 403 com o mesmo JWT. |
+| 11 | B remove somente o vínculo de A com DELETE do vínculo. | 204; A recebe 404 na coleção e no projeto; conta e projeto continuam existindo. |
+| 12 | A renova seu JWT em `/api/v1/auth/token/refresh/`, usando seu refresh token. | Perfil continua 200; projeto continua 404. Renovação não devolve participação. |
+| 13 | B consulta o projeto e C consulta sua coleção. | Conteúdo, autoria e organização preservados; projetos e contas não foram excluídos. |
+
+O fluxo automatizado usa contas fictícias e somente o banco separado de testes.
+Ele não exige criar contas ou registros de demonstração no banco local.
+Para reproduzi-lo em um novo terminal PowerShell na raiz do repositório:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/projects/test_sprint3_flow.py --reuse-db -v --tb=short
+```
+
+Os testes específicos também cobrem paginação, campos inválidos, falhas de
+integridade com rollback e revogação de permissão durante a espera pelo bloqueio.
+A suíte completa e os critérios finais estão em [Sprint 3](docs/sprint-3.md).
 
 ## Validação local
 
