@@ -177,10 +177,12 @@ central de acesso à organização, com consulta de vínculo/papel após o bloqu
 nas escritas. O criador é obtido do JWT e a organização é definida pelo caminho;
 campos controlados pelo servidor são rejeitados na entrada.
 
-Foram aprovados **246 testes em 25,08 s** no PostgreSQL separado de testes:
-195 anteriores e 51 novos. A cobertura nova inclui modelo e preservação de dados,
+Foram aprovados **247 testes em 31,15 s** no PostgreSQL separado de testes:
+195 anteriores e 52 novos. A cobertura nova inclui modelo e preservação de dados,
 limites dos campos, identidade, autoria, papéis por organização, paginação,
-erros, remoção de vínculo e dois testes de revogação concorrente de acesso.
+erros, remoção de vínculo, dois testes de revogação concorrente de acesso e
+um teste de falha real de chave estrangeira adiada até o commit, com rollback
+e mensagem genérica.
 A execução conjunta dos módulos está organizada em pacote próprio para evitar
 colisão entre nomes de arquivos de teste. Ruff, formatação, dependências,
 verificações Django e correspondência entre modelos/migrações passaram.

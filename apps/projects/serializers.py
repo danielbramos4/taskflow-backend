@@ -1,8 +1,6 @@
 from collections.abc import Mapping
 
-from django.db import IntegrityError, transaction
 from rest_framework import serializers
-from rest_framework.exceptions import APIException
 
 from apps.projects.models import Project
 
@@ -40,10 +38,3 @@ class ProjectSerializer(serializers.ModelSerializer):
                     {field: ["Campo não permitido."] for field in sorted(unexpected)}
                 )
         return super().to_internal_value(data)
-
-    def create(self, validated_data):
-        try:
-            with transaction.atomic():
-                return Project.objects.create(**validated_data)
-        except IntegrityError:
-            raise APIException("Não foi possível criar o projeto.") from None

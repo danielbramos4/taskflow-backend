@@ -288,7 +288,8 @@ organização inexistente ou sem vínculo recebe 404, inclusive para superusuár
 Dados inválidos, limites excedidos, corpo que não é objeto JSON e campos
 controlados pelo servidor recebem 400, sem criar projeto. PUT, PATCH e DELETE
 na coleção recebem 405. Falhas de integridade inesperadas recebem 500 com
-mensagem genérica. Escritas bloqueiam a organização e conferem novamente o
+mensagem genérica, inclusive quando a validação do banco falha no encerramento
+da transação. Escritas bloqueiam a organização e conferem novamente o
 papel após a espera; revogações de acesso passam a valer com o mesmo JWT.
 
 A migração `projects.0001_initial` cria somente a tabela nova e seus vínculos e

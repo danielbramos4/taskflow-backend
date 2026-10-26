@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
 from time import monotonic, sleep
+from unittest.mock import patch
 
 import pytest
 from django.db import connection, connections, transaction
@@ -72,3 +73,23 @@ def test_creation_rechecks_access_after_waiting_for_organization_lock(
     assert Membership.objects.filter(
         organization=organization, user=outsider, role="owner"
     ).exists()
+
+
+def test_deferred_foreign_key_failure_returns_generic_error_and_rolls_back(
+    api_client, url
+):
+    create_project = Project.objects.create
+
+    def create_with_missing_author(**kwargs):
+        kwargs.pop("created_by")
+        return create_project(**kwargs, created_by_id=-1)
+
+    with patch(
+        "apps.projects.serializers.Project.objects.create",
+        side_effect=create_with_missing_author,
+    ):
+        response = api_client.post(url, {"name": "Rejected at commit"}, format="json")
+
+    assert response.status_code == 500
+    assert str(response.data["detail"]) == "Não foi possível criar o projeto."
+    assert not Project.objects.exists()
