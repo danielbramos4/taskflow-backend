@@ -8,8 +8,9 @@ que possui em cada organização.
 
 Escopo escolhido: organizações e permissões. Execução por entregas, sem prazo
 fixo. A Entrega 1 foi integrada à `main` pelo PR #2, com validação local e no CI.
-A Entrega 2 está implementada e validada localmente, para revisão no PR. As Entregas 3 e 4
-continuam planejadas.
+A Entrega 2 foi integrada à `main` pelo PR #3, com validação local e no CI.
+A Entrega 3 está implementada e validada localmente, para revisão no PR. A Entrega 4
+continua planejada.
 
 ## Ponto de partida
 
@@ -109,15 +110,15 @@ não podem ser usados para obter privilégios.
 **Resultado:** proprietários controlam a equipe, com isolamento e preservação de
 pelo menos um proprietário ativo nas operações da API.
 
-- [ ] Implementar listagem, inclusão, alteração de papel e remoção de vínculos.
-- [ ] Usar os IDs de usuários ativos já existentes; não criar contas nessa operação.
-- [ ] Rejeitar vínculo duplicado sem converter inclusão em atualização implícita.
-- [ ] Impedir acesso a um vínculo de B usando o caminho da organização A.
-- [ ] Impedir que membros comuns adicionem pessoas, se promovam ou removam vínculos.
-- [ ] Permitir promoção a proprietário antes de rebaixar/remover o proprietário anterior.
-- [ ] Impedir remoção/rebaixamento do último proprietário ativo, inclusive em concorrência.
-- [ ] Garantir que a remoção de vínculo preserve o usuário e a organização.
-- [ ] Testar todos os cenários e manter os testes da Sprint 1 aprovados.
+- [x] Implementar listagem, inclusão, alteração de papel e remoção de vínculos.
+- [x] Usar os IDs de usuários ativos já existentes; não criar contas nessa operação.
+- [x] Rejeitar vínculo duplicado sem converter inclusão em atualização implícita.
+- [x] Impedir acesso a um vínculo de B usando o caminho da organização A.
+- [x] Impedir que membros comuns adicionem pessoas, se promovam ou removam vínculos.
+- [x] Permitir promoção a proprietário antes de rebaixar/remover o proprietário anterior.
+- [x] Impedir remoção/rebaixamento do último proprietário ativo, inclusive em concorrência.
+- [x] Garantir que a remoção de vínculo preserve o usuário e a organização.
+- [x] Testar todos os cenários e manter os testes da Sprint 1 aprovados.
 
 **Aceite:** alterar/remover vínculo afeta somente a organização autorizada. A
 remoção de acesso passa a valer na requisição seguinte, mesmo com JWT ainda
@@ -187,8 +188,8 @@ Concluir cada entrega com seus testes e critérios antes de iniciar a seguinte:
 1 → 2 → 3 → 4. Uma entrega pode ser dividida em PRs menores conforme a revisão;
 não há datas, estimativas em dias ou quantidade de testes tratadas como compromisso.
 
-Próximo trabalho de implementação: Entrega 3, após a revisão e integração da
-Entrega 2, com administração de membros e proteção do último proprietário ativo.
+Próximo trabalho: Entrega 4, após a revisão e integração da Entrega 3,
+com validação do fluxo completo e fechamento dos critérios da sprint.
 
 ## Progresso da Entrega 1 — 23/10/2026
 
@@ -228,8 +229,38 @@ README atualizado com caminhos, exemplos e respostas. A validação remota e o
 estado da revisão ficam registrados no PR da Entrega 2. Credenciais, Compose,
 modelos e migrações existentes foram preservados; nenhum volume foi removido.
 
+## Progresso da Entrega 3 — 26/10/2026
+
+Administração de membros implementada: listagem paginada para participantes;
+inclusão de contas ativas existentes, alteração de papel e remoção de vínculo
+reservadas a proprietários da organização correspondente. Respostas omitem dados
+privados da conta e não há criação de usuários nem alteração de identidade ou
+de organização de um vínculo. Duplicidades recebem 400 sem modificar o papel.
+
+Cada escrita bloqueia a linha da organização dentro de uma transação e consulta
+novamente vínculo e papel após obter o bloqueio. O membro alvo é buscado somente
+dentro dessa organização. Remoção ou rebaixamento exige outro proprietário ativo;
+a API mantém essa regra em alterações simultâneas. Mudanças de contas fora desta
+API continuam sujeitas ao limite já descrito no planejamento.
+
+A suíte completa aprovou 194 testes em 19,78 s no PostgreSQL separado de testes:
+97 anteriores e 97 novos, incluindo dez testes com transações e conexões reais
+concorrentes. Esses testes comprovam a espera pelo bloqueio compartilhado da
+organização, a preservação de um proprietário em rebaixamentos/remoções
+simultâneos, a rejeição de inclusão duplicada concorrente e a nova autorização
+após revogação de acesso durante a espera. Os testes de autenticação anteriores
+permanecem aprovados. Ruff, formatação, dependências, Django e a verificação de
+migrações passaram; nenhuma mudança de modelo foi necessária.
+
+A auditoria somente leitura do banco de desenvolvimento encontrou zero
+organizações e zero sem proprietário ativo. Segredos, configurações do banco,
+modelos e migrações existentes permanecem preservados. A validação remota e o
+estado da revisão serão registrados no PR da Entrega 3. A Entrega 4 permanece
+para revisão do fluxo completo, exemplos integrados e fechamento dos critérios.
+
 ## Referências técnicas
 
 - [Permissões no Django REST Framework](https://www.django-rest-framework.org/api-guide/permissions/).
 - [Filtragem por usuário no Django REST Framework](https://www.django-rest-framework.org/api-guide/filtering/).
 - [Transações no Django 5.2](https://docs.djangoproject.com/en/5.2/topics/db/transactions/).
+- [Bloqueio de linhas com select_for_update no Django 5.2](https://docs.djangoproject.com/en/5.2/ref/models/querysets/#select-for-update).
