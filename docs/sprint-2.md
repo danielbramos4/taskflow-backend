@@ -7,8 +7,9 @@ as organizações das quais participa e administre seus membros conforme o papel
 que possui em cada organização.
 
 Escopo escolhido: organizações e permissões. Execução por entregas, sem prazo
-fixo. A Entrega 1 está implementada e validada no CI, em revisão no PR #2.
-As Entregas 2 a 4 continuam planejadas.
+fixo. A Entrega 1 foi integrada à `main` pelo PR #2, com validação local e no CI.
+A Entrega 2 está implementada e validada localmente, para revisão no PR. As Entregas 3 e 4
+continuam planejadas.
 
 ## Ponto de partida
 
@@ -92,12 +93,12 @@ usuário sem vínculos recebe uma lista vazia com 200.
 
 **Resultado:** participantes consultam detalhes e apenas proprietários editam.
 
-- [ ] Implementar GET e PATCH de detalhes.
-- [ ] Centralizar a verificação de participação e de papel por organização.
-- [ ] Aplicar o mesmo isolamento na busca por ID usado nos detalhes.
-- [ ] Testar proprietário, membro, usuário externo e usuário sem token.
-- [ ] Testar um usuário proprietário de A e membro de B: pode editar A, não B.
-- [ ] Testar IDs de organizações inexistentes e tentativas de trocar identidade.
+- [x] Implementar GET e PATCH de detalhes.
+- [x] Centralizar a verificação de participação e de papel por organização.
+- [x] Aplicar o mesmo isolamento na busca por ID usado nos detalhes.
+- [x] Testar proprietário, membro, usuário externo e usuário sem token.
+- [x] Testar um usuário proprietário de A e membro de B: pode editar A, não B.
+- [x] Testar IDs de organizações inexistentes e tentativas de trocar identidade.
 
 **Aceite:** membro consulta com 200, mas recebe 403 ao editar; usuário externo
 recebe 404. Nome/slug inválidos não alteram a organização. Campos como `my_role`
@@ -186,8 +187,8 @@ Concluir cada entrega com seus testes e critérios antes de iniciar a seguinte:
 1 → 2 → 3 → 4. Uma entrega pode ser dividida em PRs menores conforme a revisão;
 não há datas, estimativas em dias ou quantidade de testes tratadas como compromisso.
 
-Próximo trabalho de implementação: Entrega 2, após a revisão e integração da
-Entrega 1, com consulta e edição de organizações conforme participação e papel.
+Próximo trabalho de implementação: Entrega 3, após a revisão e integração da
+Entrega 2, com administração de membros e proteção do último proprietário ativo.
 
 ## Progresso da Entrega 1 — 23/10/2026
 
@@ -207,6 +208,25 @@ Modelos, credenciais e volumes existentes foram preservados. A criação da
 organização e do proprietário é atômica; a listagem é filtrada pelo vínculo do
 solicitante e informa seu papel em cada organização. O estado da revisão e da
 integração deve ser consultado no próprio PR.
+
+## Progresso da Entrega 2 — 26/10/2026
+
+Consulta e edição de organizações implementadas. Listagem e detalhes compartilham
+um conjunto filtrado pelos vínculos do solicitante; a permissão de escrita exige
+papel `owner` na organização consultada. Não há exceção para superusuários.
+
+A suíte local aprovou 97 testes em 8,30 s no PostgreSQL separado de testes,
+incluindo os 50 anteriores e 47 cenários novos. Foram verificados: leitura por
+participantes, edição pelo proprietário, rejeição de membros e usuários externos,
+IDs inexistentes, troca de identidade, mudanças de papel e remoção de vínculo
+com o mesmo JWT. Também há cobertura de PATCH parcial, campos inválidos,
+slug duplicado inclusive após a validação, falha de integridade e métodos
+não oferecidos. Ruff, formatação, `pip check`, verificações Django e ausência de
+migrações de modelo passaram.
+
+README atualizado com caminhos, exemplos e respostas. A validação remota e o
+estado da revisão ficam registrados no PR da Entrega 2. Credenciais, Compose,
+modelos e migrações existentes foram preservados; nenhum volume foi removido.
 
 ## Referências técnicas
 

@@ -78,9 +78,11 @@ No VS Code, selecione `.venv/Scripts/python.exe` como interpretador Python.
 | GET | `/api/v1/auth/me/` | Requer `Authorization: Bearer <access>` e devolve o próprio usuário. |
 | GET | `/api/v1/organizations/` | Lista somente organizações do solicitante, com paginação. |
 | POST | `/api/v1/organizations/` | Cria organização e vínculo de proprietário para o solicitante. |
+| GET | `/api/v1/organizations/{organization_id}/` | Consulta uma organização da qual o solicitante participa. |
+| PATCH | `/api/v1/organizations/{organization_id}/` | Proprietário altera nome e/ou slug da organização. |
 
-A coleção de organizações está disponível na Entrega 1 da Sprint 2. Detalhes,
-edição de organizações e administração de membros continuam nas próximas entregas.
+As Entregas 1 e 2 da Sprint 2 oferecem criação, listagem, consulta e edição de
+organizações. A administração de membros está prevista para a Entrega 3.
 
 ## API de organizações — Entrega 1
 
@@ -111,6 +113,37 @@ Erros previstos: 400 para campos inválidos, slug duplicado ou campos não aceit
 escrita não oferecidos na coleção. Somente `name` e `slug` são aceitos no POST;
 campos como `id`, `owner`, `user_id` e `my_role` recebem 400. Falhas de integridade
 não previstas na criação retornam 500 com mensagem genérica, sem detalhes do banco.
+
+## Consulta e edição de organizações — Entrega 2
+
+`GET /api/v1/organizations/{organization_id}/` exige JWT e participação na
+organização. Proprietários e membros recebem 200 com os mesmos campos da
+criação, incluindo seu próprio `my_role`.
+
+Somente proprietários podem usar `PATCH` nesse caminho. Envie apenas os campos
+que deseja alterar, por exemplo:
+
+```json
+{
+  "name": "Novo nome da equipe"
+}
+```
+
+A resposta 200 contém a organização atualizada; omitir `slug` preserva seu valor.
+Um objeto vazio (`{}`) retorna 200 sem alterar os dados. Campos inesperados ou
+controlados pelo servidor, nome/slug inválidos e slug duplicado recebem 400,
+sem salvar alterações parciais. Falhas de integridade não previstas retornam
+500 com mensagem genérica.
+
+Membros recebem 403 ao editar. Usuários sem vínculo recebem 404 na consulta e
+na edição, assim como para um ID inexistente, inclusive se forem superusuários.
+Sem JWT válido, a resposta é 401. POST, PUT e DELETE nesse caminho recebem 405.
+Ser proprietário de uma organização não dá permissão de edição em outra.
+
+O vínculo e o papel são consultados a cada requisição: mudanças de papel e
+remoção de vínculo passam a valer com o mesmo JWT na próxima requisição.
+Parâmetros como `user_id`, `my_role` ou `organization_id` não trocam a identidade
+nem o recurso indicado no caminho. A API desta entrega não altera vínculos.
 
 ## Validação local
 
