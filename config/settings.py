@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     # Aplicativos internos
     "apps.accounts.apps.AccountsConfig",
     "apps.organizations.apps.OrganizationsConfig",
+    "apps.projects.apps.ProjectsConfig",
 ]
 
 MIDDLEWARE = [
