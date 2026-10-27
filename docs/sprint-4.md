@@ -73,7 +73,7 @@ inclusive quando a falha ocorre ao concluir a transação. Não há DELETE ou PU
 - [x] Testar JWT, papéis, campos, projetos arquivados e preservação de dados.
 - [x] Testar revogação concorrente e falha real de integridade no PostgreSQL.
 - [x] Validar migração, base anterior e verificações de qualidade.
-- [ ] Integrar a entrega após CI aprovado e revisão do PR.
+- [x] Integrar a entrega após CI aprovado e revisão do PR.
 
 **Aceite:** owner cria com 201; member lê com 200 e cria com 403; externo recebe
 404; projeto de outra organização não pode ser usado no caminho. Criação
@@ -155,5 +155,10 @@ preexistentes, foram preservados por hash. Segredos, Compose, configurações de
 credenciais e modelos/migrações anteriores permanecem intactos; settings apenas
 registra o novo app. Nenhuma senha ou volume foi alterado e nenhum registro de
 demonstração foi criado no banco local. README atualizado com a API, os limites
-e a validação em novo PowerShell. Integração à main aguarda o CI e a revisão do
-PR desta entrega; a Entrega 2 é o próximo passo.
+e a validação em novo PowerShell. A Entrega 1 foi integrada à main pelo
+[PR #10](https://github.com/danielbramos4/taskflow-backend/pull/10), após CI
+aprovado e conferência da implementação. O
+[CI #39](https://github.com/danielbramos4/taskflow-backend/actions/runs/40601349609)
+aprovou 405 testes no PostgreSQL 17 para o código da entrega; a atualização final
+do registro também passa pelo CI antes da integração. A Entrega 2 permanece
+planejada como o próximo passo: consultar e editar tarefas individualmente.
