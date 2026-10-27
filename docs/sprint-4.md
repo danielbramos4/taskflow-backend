@@ -45,8 +45,8 @@ Prefixo: `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/`.
 | --- | --- | --- |
 | 1 | GET da coleção | 200; tarefas do projeto autorizado, com paginação de 20 registros. |
 | 1 | POST da coleção | 201; owner informa `title` e `description` opcional; servidor define projeto, autor e status todo. |
-| 2 | GET de `{task_id}/` | Planejado: consulta individual limitada a organização e projeto. |
-| 2 | PATCH de `{task_id}/` | Planejado: owner altera título e/ou descrição. |
+| 2 | GET de `{task_id}/` | 200; consulta individual limitada a organização e projeto. |
+| 2 | PATCH de `{task_id}/` | 200; owner altera título e/ou descrição. |
 | 3 | Mesmo PATCH com `status` | Planejado: owner alterna entre os três estados, sem excluir a tarefa. |
 
 Resposta: `id`, `project_id`, `title`, `description`, `status`, `created_by_id`,
@@ -62,6 +62,10 @@ Valores inválidos e corpos que não são objetos JSON recebem 400. Sem JWT vál
 projeto de outra organização no caminho: 404. Métodos não oferecidos: 405.
 Falhas de integridade inesperadas recebem 500 com mensagem genérica e rollback,
 inclusive quando a falha ocorre ao concluir a transação. Não há DELETE ou PUT.
+PATCH individual aceita somente título e descrição; protege os mesmos campos
+de identidade, vínculos, autoria, status e datas que o POST. Campos omitidos
+permanecem intactos; PATCH vazio preserva também updated_at. A busca confere
+organização, projeto e tarefa, sem ampliar acesso por parâmetros de consulta.
 
 ## Entrega 1 — criar e listar tarefas
 
@@ -81,11 +85,15 @@ inválida ou não autorizada não deixa tarefa persistida.
 
 ## Entrega 2 — consultar e editar tarefas
 
-- [ ] Implementar GET/PATCH individual com busca limitada aos dois pais.
-- [ ] Permitir somente título e descrição no PATCH, preservando campos omitidos.
-- [ ] Rejeitar transferência de projeto, alteração de autor, status e datas.
-- [ ] Testar papéis, IDs cruzados, autoria e revogação com o mesmo JWT.
-- [ ] Testar espera pelo bloqueio e rollback; documentar e validar CI.
+- [x] Implementar GET/PATCH individual com busca limitada aos dois pais.
+- [x] Permitir somente título e descrição no PATCH, preservando campos omitidos.
+- [x] Rejeitar transferência de projeto, alteração de autor, status e datas.
+- [x] Testar papéis, IDs cruzados, autoria e revogação com o mesmo JWT.
+- [x] Testar espera pelo bloqueio e rollback; documentar e validar CI.
+
+**Aceite:** participante consulta com 200; owner edita com 200; member recebe
+403 ao editar e externo recebe 404. Campos proibidos, dados inválidos e IDs
+cruzados não alteram registros. Status permanece protegido até a Entrega 3.
 
 ## Entrega 3 — alterar estado de execução
 
@@ -160,5 +168,40 @@ e a validação em novo PowerShell. A Entrega 1 foi integrada à main pelo
 aprovado e conferência da implementação. O
 [CI #39](https://github.com/danielbramos4/taskflow-backend/actions/runs/40601349609)
 aprovou 405 testes no PostgreSQL 17 para o código da entrega; a atualização final
-do registro também passa pelo CI antes da integração. A Entrega 2 permanece
-planejada como o próximo passo: consultar e editar tarefas individualmente.
+do registro também passou pelo CI antes da integração. A consulta/edição
+individual é tratada na Entrega 2 abaixo.
+
+## Progresso da Entrega 2 — 27/10/2026
+
+Consulta e edição individual implementadas. Coleção e detalhe compartilham a
+busca limitada ao projeto da organização autorizada. A autorização é conferida
+sobre a organização; a tarefa só é buscada depois de validar os dois pais.
+Owners alteram título e descrição; status, vínculos, autoria e datas continuam
+protegidos. Atualização parcial salva somente campos fornecidos e updated_at;
+PATCH vazio não altera nenhum dado. Tarefas de projetos arquivados mantêm as
+mesmas regras de leitura e edição.
+
+Foram aprovados **468 testes em 35,55 s** no PostgreSQL separado de testes:
+os 405 anteriores e 63 novos, sem falhas ou testes ignorados. A validação local
+seleciona os diretórios versionados do TaskFlow e preserva os arquivos de outro
+trabalho fora da execução; o CI executa a suíte completa versionada.
+
+Os testes novos verificam JWT, papéis, superusuários sem vínculo, autoria nula,
+IDs cruzados de projeto e organização, consultas com IDs forjados, campos
+protegidos, limites, corpos inválidos e atomicidade. Promoção, rebaixamento e
+remoção são conferidos pelas APIs de membros com os mesmos JWTs. Um teste
+preserva mudança concorrente em campo omitido; dois verificam revogação real
+enquanto a edição aguarda o bloqueio da organização no PostgreSQL. Falha real de
+chave estrangeira adiada ao commit desfaz a edição e retorna erro genérico.
+
+Ruff, formatação, dependências, Django e consistência de migrações aprovados.
+Não houve alteração de modelos, migrações ou configurações. Os 84 arquivos
+protegidos, incluindo os sete arquivos não versionados preexistentes, foram
+preservados por hash. A auditoria somente leitura encontrou zero organizações,
+projetos e tarefas no banco local e nenhuma migração pendente. Senhas e volumes
+permanecem preservados; nenhum dado de demonstração foi criado ou alterado.
+
+README documenta caminhos, campos, exemplos, erros e validação em novo
+PowerShell. A execução remota e o commit aprovado são registrados no PR desta
+entrega. Integração à main aguarda o CI e a revisão; a Entrega 3 continua
+planejada para a mudança de estado da tarefa.

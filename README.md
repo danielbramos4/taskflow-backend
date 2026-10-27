@@ -8,9 +8,9 @@ Organizações e permissões foram concluídas na [Sprint 2](docs/sprint-2.md),
 com as quatro entregas e seus critérios de aceite validados.
 Projetos por organização foram concluídos na [Sprint 3](docs/sprint-3.md),
 com as quatro entregas e seus critérios de aceite validados.
-A [Sprint 4](docs/sprint-4.md) trata de tarefas por projeto; a primeira entrega
-oferece criação e listagem. Consulta/edição individual e mudança de estado
-continuam planejadas para as entregas seguintes.
+A [Sprint 4](docs/sprint-4.md) trata de tarefas por projeto. As Entregas 1 e 2
+oferecem criação, listagem, consulta e edição individual. A mudança de estado
+continua planejada para a Entrega 3.
 
 ## Requisitos
 
@@ -96,6 +96,8 @@ No VS Code, selecione `.venv/Scripts/python.exe` como interpretador Python.
 | PATCH | `/api/v1/organizations/{organization_id}/projects/{project_id}/` | Proprietário edita nome/descrição e arquiva ou restaura o projeto. |
 | GET | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/` | Participante lista tarefas do projeto, com paginação. |
 | POST | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/` | Proprietário cria tarefa com título e descrição opcional. |
+| GET | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/{task_id}/` | Participante consulta uma tarefa do projeto autorizado. |
+| PATCH | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/{task_id}/` | Proprietário altera título e/ou descrição da tarefa. |
 
 As quatro entregas da Sprint 2 estão concluídas: organizações, administração
 de membros, validação do fluxo completo e fechamento dos critérios de aceite.
@@ -476,8 +478,9 @@ POST aceita somente título e descrição. Enviar status, mesmo `todo`, projeto,
 organização, autor, datas, identidade ou campos extras recebe 400. Corpos que não
 são objetos JSON e campos inválidos também recebem 400. JWT ausente/inválido:
 401; member tentando criar: 403; organização sem vínculo ou projeto fora do
-caminho: 404. Métodos não oferecidos: 405. Não há detalhe individual, edição,
-troca de status nem DELETE nesta entrega. Falha inesperada de integridade
+caminho: 404. Métodos não oferecidos: 405. Consulta/edição individual são
+descritas na Entrega 2 abaixo; troca de status fica para a Entrega 3. Não há
+DELETE. Falha inesperada de integridade
 retorna 500 genérico e não persiste a tarefa, inclusive em erro adiado ao commit.
 
 Tarefas não podem ser transferidas para outro projeto. Exclusão administrativa
@@ -496,6 +499,49 @@ raiz do repositório e com o banco existente disponível:
 
 Mantenha o `.env` e a senha já aceita pelo banco; não recrie volumes. A validação
 da migração e da base anterior fica registrada em [Sprint 4](docs/sprint-4.md).
+
+## Consulta e edição de tarefas — Sprint 4, Entrega 2
+
+Detalhe: `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/{task_id}/`.
+GET retorna 200 com os mesmos campos da coleção. A tarefa precisa pertencer ao
+projeto do caminho, e o projeto à organização autorizada. Trocar qualquer ID
+para apontar a outro pai não expõe nem altera o recurso, mesmo para quem é
+owner das duas organizações. Parâmetros de consulta não trocam o alvo.
+
+PATCH de owner aceita somente `title` e/ou `description`. Por exemplo:
+
+```json
+{"title": "Revisar critérios", "description": "Conferir o aceite com a equipe"}
+```
+
+Retorna 200 com a tarefa atualizada. Os limites são os mesmos do POST; campos
+omitidos mantêm seu valor. Descrição vazia é permitida; título vazio ou null,
+descrição null e limites excedidos recebem 400. PATCH vazio retorna 200 sem
+alterar dados nem `updated_at`. Uma alteração válida atualiza essa data e salva
+somente os campos enviados, preservando mudanças concorrentes em campos omitidos.
+
+Identidade, projeto, organização, autor, datas, status e campos inesperados são
+rejeitados com 400, sem alterar nenhum campo. Isso inclui enviar status `todo`,
+`in_progress` ou `done`: sua alteração será acrescentada na Entrega 3. Tarefas de
+projetos arquivados continuam consultáveis e editáveis pelos mesmos papéis.
+
+JWT inválido/ausente recebe 401; member consulta com 200 e recebe 403 ao editar.
+Usuário sem vínculo, pais inconsistentes ou tarefa inexistente recebem 404.
+Autoria e superusuário sem vínculo não concedem acesso. Promoção, rebaixamento e
+remoção de vínculo valem na próxima requisição, usando o mesmo JWT. PUT, POST no
+detalhe e DELETE não são oferecidos e recebem 405 para usuários autenticados.
+
+A edição bloqueia a organização, consulta novamente vínculo/papel após a
+espera e valida os dois pais antes de buscar a tarefa. A transação desfaz toda
+a alteração em caso de falha de integridade, inclusive se detectada ao commit,
+com resposta 500 genérica sem dados privados do banco.
+
+Não há alteração de modelos nem nova migração nesta entrega. Para validar em
+um novo terminal PowerShell na raiz do repositório:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/tasks/test_detail_api.py tests/tasks/test_detail_concurrency.py --reuse-db -v --tb=short
+```
 
 ## Validação local
 
