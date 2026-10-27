@@ -8,6 +8,9 @@ Organizações e permissões foram concluídas na [Sprint 2](docs/sprint-2.md),
 com as quatro entregas e seus critérios de aceite validados.
 Projetos por organização foram concluídos na [Sprint 3](docs/sprint-3.md),
 com as quatro entregas e seus critérios de aceite validados.
+A [Sprint 4](docs/sprint-4.md) trata de tarefas por projeto; a primeira entrega
+oferece criação e listagem. Consulta/edição individual e mudança de estado
+continuam planejadas para as entregas seguintes.
 
 ## Requisitos
 
@@ -91,6 +94,8 @@ No VS Code, selecione `.venv/Scripts/python.exe` como interpretador Python.
 | POST | `/api/v1/organizations/{organization_id}/projects/` | Proprietário cria projeto, com organização e autoria definidas no servidor. |
 | GET | `/api/v1/organizations/{organization_id}/projects/{project_id}/` | Participantes consultam um projeto dentro da organização autorizada. |
 | PATCH | `/api/v1/organizations/{organization_id}/projects/{project_id}/` | Proprietário edita nome/descrição e arquiva ou restaura o projeto. |
+| GET | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/` | Participante lista tarefas do projeto, com paginação. |
+| POST | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/` | Proprietário cria tarefa com título e descrição opcional. |
 
 As quatro entregas da Sprint 2 estão concluídas: organizações, administração
 de membros, validação do fluxo completo e fechamento dos critérios de aceite.
@@ -443,6 +448,54 @@ Para reproduzi-lo em um novo terminal PowerShell na raiz do repositório:
 Os testes específicos também cobrem paginação, campos inválidos, falhas de
 integridade com rollback e revogação de permissão durante a espera pelo bloqueio.
 A suíte completa e os critérios finais estão em [Sprint 3](docs/sprint-3.md).
+
+## API de tarefas — Sprint 4, Entrega 1
+
+Coleção: `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/`.
+O projeto deve pertencer à organização do caminho, e o usuário deve participar
+dela. Owners criam; members consultam. Autoria e superusuário sem vínculo não
+concedem privilégios. Projetos arquivados mantêm essas mesmas regras.
+
+Exemplo de corpo POST, com JWT do proprietário:
+
+```json
+{"title": "Preparar primeira entrega", "description": "Conferir requisitos"}
+```
+
+Retorno 201: `id`, `project_id`, `title`, `description`, `status`, `created_by_id`,
+`created_at`, `updated_at`. O servidor define projeto e autor; o status inicial
+é `todo`. Título obrigatório, até 150 caracteres, sem vazio após remover espaços
+nas extremidades. Descrição opcional, padrão vazio, até 5.000 caracteres,
+sem null. Títulos repetidos são permitidos.
+
+GET retorna 200 com `count`, `next`, `previous`, `results`, 20 tarefas por página,
+ordenadas por `created_at, id`. Use `?page=2` para a próxima página. Não há
+filtros nesta entrega; parâmetros de projeto ou organização não alteram o alvo.
+
+POST aceita somente título e descrição. Enviar status, mesmo `todo`, projeto,
+organização, autor, datas, identidade ou campos extras recebe 400. Corpos que não
+são objetos JSON e campos inválidos também recebem 400. JWT ausente/inválido:
+401; member tentando criar: 403; organização sem vínculo ou projeto fora do
+caminho: 404. Métodos não oferecidos: 405. Não há detalhe individual, edição,
+troca de status nem DELETE nesta entrega. Falha inesperada de integridade
+retorna 500 genérico e não persiste a tarefa, inclusive em erro adiado ao commit.
+
+Tarefas não podem ser transferidas para outro projeto. Exclusão administrativa
+do projeto com tarefas é protegida; exclusão administrativa do autor preserva
+a tarefa com autoria nula. Essas exclusões não estão disponíveis pela API.
+
+A migração `tasks.0001_initial` cria somente a nova tabela, seus índices e
+chaves estrangeiras. Para atualizar outra instalação, em um novo PowerShell na
+raiz do repositório e com o banco existente disponível:
+
+```powershell
+.\.venv\Scripts\python.exe manage.py migrate --plan
+.\.venv\Scripts\python.exe manage.py migrate
+.\.venv\Scripts\python.exe -m pytest tests/tasks --reuse-db -v --tb=short
+```
+
+Mantenha o `.env` e a senha já aceita pelo banco; não recrie volumes. A validação
+da migração e da base anterior fica registrada em [Sprint 4](docs/sprint-4.md).
 
 ## Validação local
 
