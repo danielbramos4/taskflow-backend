@@ -20,7 +20,7 @@ pytestmark = [
 ]
 
 
-def update_task_in_separate_connection(token, url, backend_ids):
+def update_task_in_separate_connection(token, url, backend_ids, payload):
     try:
         with connection.cursor() as cursor:
             cursor.execute("SET statement_timeout = '15s'")
@@ -29,17 +29,30 @@ def update_task_in_separate_connection(token, url, backend_ids):
             backend_ids.put(cursor.fetchone()[0])
         client = APIClient()
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
-        return client.patch(url, {"title": "Pending edit"}, format="json").status_code
+        return client.patch(url, payload, format="json").status_code
     finally:
         connections.close_all()
 
 
 @pytest.mark.parametrize("revocation", ["demote", "remove"])
+@pytest.mark.parametrize(
+    "payload,initial_status",
+    [
+        ({"title": "Pending edit"}, "todo"),
+        ({"status": "in_progress"}, "todo"),
+        ({"status": "done"}, "in_progress"),
+        ({"status": "todo"}, "done"),
+    ],
+)
 def test_edit_rechecks_access_after_organization_lock(
-    organization, project, owner, outsider, revocation
+    organization, project, owner, outsider, revocation, payload, initial_status
 ):
     task = Task.objects.create(
-        project=project, title="Original", description="Scope", created_by=owner
+        project=project,
+        title="Original",
+        description="Scope",
+        created_by=owner,
+        status=initial_status,
     )
     original_updated_at = task.updated_at
     url = reverse(
@@ -61,7 +74,7 @@ def test_edit_rechecks_access_after_organization_lock(
                 cursor.execute("SELECT pg_backend_pid()")
                 blocker_id = cursor.fetchone()[0]
             future = pool.submit(
-                update_task_in_separate_connection, token, url, backend_ids
+                update_task_in_separate_connection, token, url, backend_ids, payload
             )
             worker_id = backend_ids.get(timeout=10)
             deadline = monotonic() + 8
@@ -83,7 +96,7 @@ def test_edit_rechecks_access_after_organization_lock(
         assert future.result(timeout=15) == (403 if revocation == "demote" else 404)
     task.refresh_from_db()
     assert task.title == "Original" and task.description == "Scope"
-    assert task.status == "todo" and task.created_by_id == owner.pk
+    assert task.status == initial_status and task.created_by_id == owner.pk
     assert task.project_id == project.pk and task.updated_at == original_updated_at
     assert Task.objects.count() == 1
     assert Membership.objects.filter(
@@ -91,8 +104,11 @@ def test_edit_rechecks_access_after_organization_lock(
     ).exists()
 
 
+@pytest.mark.parametrize(
+    "payload", [{"title": "Rejected at commit"}, {"status": "done"}]
+)
 def test_deferred_edit_failure_rolls_back_at_commit(
-    api_client, project, owner, organization
+    api_client, project, owner, organization, payload
 ):
     task = Task.objects.create(
         project=project, title="Original", description="Scope", created_by=owner
@@ -114,7 +130,7 @@ def test_deferred_edit_failure_rolls_back_at_commit(
         return save_task(instance, *args, **kwargs)
 
     with patch("apps.tasks.serializers.Task.save", new=save_with_missing_author):
-        response = api_client.patch(url, {"title": "Rejected at commit"}, format="json")
+        response = api_client.patch(url, payload, format="json")
     assert response.status_code == 500
     assert str(response.data["detail"]) == "Não foi possível atualizar a tarefa."
     task.refresh_from_db()

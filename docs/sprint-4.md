@@ -17,7 +17,7 @@ Novo app `apps.tasks`, com o modelo Task:
 | `project` | Projeto indicado no caminho, dentro da organização autorizada; não pode ser trocado pela API. |
 | `title` | Obrigatório, até 150 caracteres; espaços nas extremidades removidos; não aceita vazio. |
 | `description` | Opcional, padrão vazio, até 5.000 caracteres; não aceita null. |
-| `status` | Padrão `todo`; valores do domínio: `todo`, `in_progress`, `done`. Alteração pela API somente na Entrega 3. |
+| `status` | Padrão `todo`; valores do domínio: `todo`, `in_progress`, `done`. Owner altera pelo PATCH desde a Entrega 3. |
 | `created_by` | Usuário do JWT na criação; pode ficar nulo após exclusão administrativa da conta. |
 | `created_at`, `updated_at` | Datas controladas pelo servidor. |
 
@@ -47,7 +47,7 @@ Prefixo: `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/`.
 | 1 | POST da coleção | 201; owner informa `title` e `description` opcional; servidor define projeto, autor e status todo. |
 | 2 | GET de `{task_id}/` | 200; consulta individual limitada a organização e projeto. |
 | 2 | PATCH de `{task_id}/` | 200; owner altera título e/ou descrição. |
-| 3 | Mesmo PATCH com `status` | Planejado: owner alterna entre os três estados, sem excluir a tarefa. |
+| 3 | Mesmo PATCH com `status` | 200; owner alterna entre os três estados, sem excluir a tarefa. |
 
 Resposta: `id`, `project_id`, `title`, `description`, `status`, `created_by_id`,
 `created_at`, `updated_at`. Não inclui dados privados da conta. Coleção com
@@ -62,10 +62,16 @@ Valores inválidos e corpos que não são objetos JSON recebem 400. Sem JWT vál
 projeto de outra organização no caminho: 404. Métodos não oferecidos: 405.
 Falhas de integridade inesperadas recebem 500 com mensagem genérica e rollback,
 inclusive quando a falha ocorre ao concluir a transação. Não há DELETE ou PUT.
-PATCH individual aceita somente título e descrição; protege os mesmos campos
-de identidade, vínculos, autoria, status e datas que o POST. Campos omitidos
+PATCH individual aceita título, descrição e, desde a Entrega 3, status; protege
+os campos de identidade, vínculos, autoria e datas. Campos omitidos
 permanecem intactos; PATCH vazio preserva também updated_at. A busca confere
 organização, projeto e tarefa, sem ampliar acesso por parâmetros de consulta.
+
+Status aceita somente as strings exatas todo, in_progress e done. São permitidas
+todas as transições, inclusive reabrir uma tarefa concluída ou repetir o estado
+atual, sem duplicar ou excluir registros. POST continua rejeitando status.
+Valores inválidos ou qualquer campo proibido tornam todo o PATCH inválido,
+sem salvar alterações. Estado e conteúdo podem mudar na mesma operação válida.
 
 ## Entrega 1 — criar e listar tarefas
 
@@ -97,11 +103,11 @@ cruzados não alteram registros. Status permanece protegido até a Entrega 3.
 
 ## Entrega 3 — alterar estado de execução
 
-- [ ] Acrescentar status ao PATCH, aceitando somente todo, in_progress e done.
-- [ ] Permitir transições entre quaisquer desses estados, inclusive reabrir.
-- [ ] Preservar conteúdo, autoria, projeto e vínculos em cada transição.
-- [ ] Validar atomicidade com campos combinados, papéis e revogação concorrente.
-- [ ] Documentar exemplos e erros; conferir testes e CI.
+- [x] Acrescentar status ao PATCH, aceitando somente todo, in_progress e done.
+- [x] Permitir transições entre quaisquer desses estados, inclusive reabrir.
+- [x] Preservar conteúdo, autoria, projeto e vínculos em cada transição.
+- [x] Validar atomicidade com campos combinados, papéis e revogação concorrente.
+- [x] Documentar exemplos e erros; conferir testes e CI.
 
 ## Entrega 4 — fluxo completo e encerramento
 
@@ -176,8 +182,9 @@ individual é tratada na Entrega 2 abaixo.
 Consulta e edição individual implementadas. Coleção e detalhe compartilham a
 busca limitada ao projeto da organização autorizada. A autorização é conferida
 sobre a organização; a tarefa só é buscada depois de validar os dois pais.
-Owners alteram título e descrição; status, vínculos, autoria e datas continuam
-protegidos. Atualização parcial salva somente campos fornecidos e updated_at;
+Na Entrega 2, owners alteravam título e descrição, com status, vínculos, autoria
+e datas protegidos. A Entrega 3 acrescenta a alteração de status ao PATCH.
+Atualização parcial salva somente campos fornecidos e updated_at;
 PATCH vazio não altera nenhum dado. Tarefas de projetos arquivados mantêm as
 mesmas regras de leitura e edição.
 
@@ -202,6 +209,52 @@ projetos e tarefas no banco local e nenhuma migração pendente. Senhas e volume
 permanecem preservados; nenhum dado de demonstração foi criado ou alterado.
 
 README documenta caminhos, campos, exemplos, erros e validação em novo
-PowerShell. A execução remota e o commit aprovado são registrados no PR desta
-entrega. Integração à main aguarda o CI e a revisão; a Entrega 3 continua
-planejada para a mudança de estado da tarefa.
+PowerShell. A Entrega 2 foi integrada à main pelo
+[PR #11](https://github.com/danielbramos4/taskflow-backend/pull/11), após revisão
+e [CI #44 aprovado](https://github.com/danielbramos4/taskflow-backend/actions/runs/40605786312)
+para o commit `5f5ae55`. O CI da main após a integração também foi aprovado:
+[execução 40608183734](https://github.com/danielbramos4/taskflow-backend/actions/runs/40608183734).
+A mudança de estado é tratada na Entrega 3 abaixo.
+
+## Progresso da Entrega 3 — 27/10/2026
+
+Alteração de status implementada no PATCH individual, com os valores exatos
+todo, in_progress e done. Um serializer específico para edição acrescenta
+somente esse campo aos campos permitidos na Entrega 2, reutilizando atualização
+parcial, transação, bloqueio da organização e autorização após a espera.
+POST continua protegendo status, inclusive quando o cliente tenta enviar todo.
+
+Proprietários podem fazer todas as transições entre os estados, inclusive
+concluir diretamente, repetir o estado atual e reabrir. Members leem sem poder
+alterar; autoria e superusuário sem vínculo não concedem acesso. Mudança de
+estado preserva conteúdo omitido, autoria, projeto, organização e vínculos.
+Projetos arquivados mantêm os mesmos papéis e comportamento.
+
+Foram aprovados **524 testes em 39,43 s** no PostgreSQL separado de testes:
+468 anteriores, com três casos atualizados para o novo contrato, e 56 novos
+casos (49 novos de API e sete extensões de concorrência/rollback), sem falhas
+ou testes ignorados. A validação local seleciona todos os diretórios versionados
+do TaskFlow e mantém os arquivos de outro trabalho fora da execução; o CI usa
+o checkout do PR e executa a suíte completa versionada.
+
+Os três casos da Entrega 2 que rejeitavam status válido foram atualizados para
+aceitar status e título juntos, conforme o novo contrato. A cobertura nova
+verifica todas as nove combinações entre estados, preservação de registros e de
+outra equipe, valores inválidos, campos combinados, rejeição no POST e papéis.
+Promoção, rebaixamento e remoção foram conferidos com os mesmos JWTs; campos
+omitidos preservam mudanças concorrentes. Os testes de bloqueio real foram
+estendidos para iniciar, concluir e reabrir enquanto o papel/vínculo é revogado.
+Falha real de chave estrangeira adiada até o commit também foi testada para
+mudança de status, com rollback e erro genérico.
+
+Ruff, formatação, dependências, Django e consistência de migrações aprovados.
+Não houve alteração de modelos, migrações ou configurações. Os 85 arquivos
+protegidos, incluindo os sete não versionados preexistentes, foram preservados
+por hash. A auditoria somente leitura encontrou zero organizações, projetos e
+tarefas no banco local, sem migrações pendentes. Nenhum dado de demonstração,
+senha ou volume foi alterado.
+
+README atualizado com valores, exemplos, transições e validação em novo
+PowerShell. O PR desta entrega registra o commit exato e o resultado do CI;
+a integração à main aguarda revisão e checks. A Entrega 4 permanece planejada
+para validar o fluxo completo e encerrar a Sprint 4.

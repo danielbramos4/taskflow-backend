@@ -7,7 +7,7 @@ from apps.organizations.views import OrganizationAccessMixin
 from apps.projects.models import Project
 from apps.tasks.models import Task
 from apps.tasks.pagination import TaskPagination
-from apps.tasks.serializers import TaskSerializer
+from apps.tasks.serializers import TaskSerializer, TaskUpdateSerializer
 
 
 class TaskAccessMixin(OrganizationAccessMixin):
@@ -49,6 +49,7 @@ class TaskListCreateView(TaskAccessMixin, ListCreateAPIView):
 
 
 class TaskDetailView(TaskAccessMixin, GenericAPIView):
+    serializer_class = TaskUpdateSerializer
     http_method_names = ["get", "patch", "head", "options"]
 
     def get(self, request, *args, **kwargs):
