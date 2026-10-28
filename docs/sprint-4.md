@@ -6,6 +6,9 @@ Permitir organizar tarefas dentro dos projetos da Sprint 3, mantendo o isolament
 por organização e os papéis owner/member existentes. Prioridade confirmada pelo
 usuário em 27/10/2026: tarefas por projeto. Execução por entregas, sem prazo fixo.
 As Sprints 1 a 3 estão integradas à main, com 351 testes aprovados na base.
+As quatro entregas e os critérios de aceite da Sprint 4 foram concluídos em
+27/10/2026. As entregas funcionais foram integradas pelos PRs #10, #11 e #12;
+o encerramento acrescenta o teste do fluxo completo e seu registro de aceite.
 
 ## Modelo e regras
 
@@ -111,25 +114,25 @@ cruzados não alteram registros. Status permanece protegido até a Entrega 3.
 
 ## Entrega 4 — fluxo completo e encerramento
 
-- [ ] Validar fluxo de organização, projeto, tarefa, membro e estados com JWT real.
-- [ ] Validar promoção, rebaixamento, remoção do criador e refresh sem devolver acesso.
-- [ ] Aprovar a suíte anterior e nova no PostgreSQL local e no CI.
-- [ ] Conferir migrações, configurações, segredos, arquivos preexistentes e volumes.
-- [ ] Integrar as entregas após checks, registrar evidências e fechar o aceite.
+- [x] Validar fluxo de organização, projeto, tarefa, membro e estados com JWT real.
+- [x] Validar promoção, rebaixamento, remoção do criador e refresh sem devolver acesso.
+- [x] Aprovar a suíte anterior e nova no PostgreSQL local e no CI.
+- [x] Conferir migrações, configurações, segredos, arquivos preexistentes e volumes.
+- [x] Integrar as entregas após checks, registrar evidências e fechar o aceite.
 
 ## Critérios de aceitação da sprint
 
-- [ ] Tarefas pertencem a um único projeto e à organização desse projeto.
-- [ ] Participantes leem somente projetos de organizações autorizadas.
-- [ ] Owners criam e alteram; members não escrevem; autoria não concede acesso.
-- [ ] Título, descrição, status e campos controlados seguem o contrato.
-- [ ] GET/PATCH individual não aceita IDs de tarefa de outro projeto.
-- [ ] Mudanças de estado preservam registros, conteúdo e relacionamentos.
-- [ ] Revogação vale com o mesmo JWT e após espera por bloqueio.
-- [ ] Paginação, erros e rollback funcionam no PostgreSQL.
-- [ ] Sprints anteriores e fluxo novo passam localmente e no CI.
-- [ ] Migrações aditivas; credenciais, dados e volumes existentes preservados.
-- [ ] Documentação e PRs correspondem ao comportamento integrado.
+- [x] Tarefas pertencem a um único projeto e à organização desse projeto.
+- [x] Participantes leem somente projetos de organizações autorizadas.
+- [x] Owners criam e alteram; members não escrevem; autoria não concede acesso.
+- [x] Título, descrição, status e campos controlados seguem o contrato.
+- [x] GET/PATCH individual não aceita IDs de tarefa de outro projeto.
+- [x] Mudanças de estado preservam registros, conteúdo e relacionamentos.
+- [x] Revogação vale com o mesmo JWT e após espera por bloqueio.
+- [x] Paginação, erros e rollback funcionam no PostgreSQL.
+- [x] Sprints anteriores e fluxo novo passam localmente e no CI.
+- [x] Migrações aditivas; credenciais, dados e volumes existentes preservados.
+- [x] Documentação e PRs correspondem ao comportamento integrado.
 
 ## Limites
 
@@ -255,6 +258,55 @@ tarefas no banco local, sem migrações pendentes. Nenhum dado de demonstração
 senha ou volume foi alterado.
 
 README atualizado com valores, exemplos, transições e validação em novo
-PowerShell. O PR desta entrega registra o commit exato e o resultado do CI;
-a integração à main aguarda revisão e checks. A Entrega 4 permanece planejada
-para validar o fluxo completo e encerrar a Sprint 4.
+PowerShell. A Entrega 3 foi integrada à main pelo
+[PR #12](https://github.com/danielbramos4/taskflow-backend/pull/12), após revisão
+e [CI #47 aprovado](https://github.com/danielbramos4/taskflow-backend/actions/runs/40608669548)
+para o commit `f0ebe68`. O CI da main após a integração também foi aprovado:
+[execução 40609254373](https://github.com/danielbramos4/taskflow-backend/actions/runs/40609254373).
+O fluxo completo e o encerramento foram realizados na Entrega 4 abaixo.
+
+## Encerramento — Entrega 4, 27/10/2026
+
+README documenta a reprodução do fluxo completo. O novo teste
+`tests/tasks/test_sprint4_flow.py` usa login JWT real para três contas fictícias
+e percorre organizações, projetos, tarefas, estados e gestão de membros pelas
+APIs no banco separado de testes. Confere isolamento entre organizações e
+projetos, preservação de conteúdo, autoria e data de criação, tarefas em projeto
+arquivado e reabertura sem perda de registros.
+
+Promoção, rebaixamento e remoção do criador valem com os mesmos JWTs. Renovar
+o JWT preserva o acesso ao perfil, sem devolver participação nem acesso à tarefa.
+A proteção do último proprietário mantém uma conta habilitada a administrar
+a organização. Ao final, três contas, duas organizações, três projetos e três
+tarefas permanecem, com os dois vínculos esperados e tarefas externas intactas.
+
+A suíte local aprovou **525 testes em 44,58 s** no PostgreSQL separado de
+testes: os 524 anteriores e um fluxo integrado novo, sem falhas ou testes
+ignorados. Ruff, formatação (64 arquivos), dependências, Django e consistência
+entre modelos e migrações passaram. A execução local selecionou todos os
+diretórios versionados do TaskFlow e preservou os arquivos de outro trabalho
+fora dessa execução; o CI executa a suíte completa do checkout.
+
+| Critério | Evidência automatizada |
+| --- | --- |
+| Modelo, relações, defaults e preservação administrativa | `tests/tasks/test_models.py` |
+| Criação, campos controlados, papéis, paginação e isolamento | `tests/tasks/test_api.py` |
+| Consulta/edição individual, dois pais, autoria e atualização parcial | `tests/tasks/test_detail_api.py` |
+| Estados, todas as transições, atomicidade e conteúdo omitido | `tests/tasks/test_status_api.py` |
+| Bloqueio real, revogação após espera e rollback no commit | `tests/tasks/test_concurrency.py` e `test_detail_concurrency.py` |
+| Autenticação, organizações e projetos das sprints anteriores | `tests/accounts/`, `tests/organizations/` e `tests/projects/` |
+| Fluxo completo e JWT após promoção/revogação | `tests/tasks/test_sprint4_flow.py` |
+
+O encerramento altera somente README, este registro e o teste integrado novo.
+Nenhum código de aplicação, modelo, migração, configuração ou teste anterior
+foi alterado. Os 90 arquivos protegidos, incluindo os sete arquivos locais não
+versionados de outro trabalho, foram preservados por hash. O `.env` continua
+ignorado e fora do Git. A auditoria somente leitura encontrou zero organizações,
+projetos e tarefas no banco local, sem migrações pendentes nem organização sem
+proprietário ativo. Nenhum dado de demonstração, senha ou volume foi alterado.
+
+As entregas funcionais foram integradas somente após revisão e CI aprovado.
+O PR de encerramento registra o commit exato e a execução final dos checks antes
+da integração; a main é conferida novamente após o merge. Sprint 4 encerrada
+no escopo de tarefas por projeto. Responsáveis, prazos, prioridade, frontend e
+demais funcionalidades futuras continuam fora desta entrega.

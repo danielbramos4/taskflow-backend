@@ -8,9 +8,9 @@ Organizações e permissões foram concluídas na [Sprint 2](docs/sprint-2.md),
 com as quatro entregas e seus critérios de aceite validados.
 Projetos por organização foram concluídos na [Sprint 3](docs/sprint-3.md),
 com as quatro entregas e seus critérios de aceite validados.
-A [Sprint 4](docs/sprint-4.md) trata de tarefas por projeto. As Entregas 1 a 3
-oferecem criação, listagem, consulta, edição e mudança de estado. A validação
-do fluxo completo e o encerramento ficam para a Entrega 4.
+Tarefas por projeto foram concluídas na [Sprint 4](docs/sprint-4.md), com criação,
+listagem, consulta, edição, mudança de estado e validação do fluxo completo.
+As quatro entregas e seus critérios de aceite estão concluídos.
 
 ## Requisitos
 
@@ -587,6 +587,47 @@ alteração de modelos nem nova migração. Para validar em um novo PowerShell:
 ```powershell
 .\.venv\Scripts\python.exe -m pytest tests/tasks/test_status_api.py tests/tasks/test_detail_concurrency.py --reuse-db -v --tb=short
 ```
+
+## Fluxo completo de tarefas — Sprint 4, Entrega 4
+
+Para reprodução manual, use três contas ativas de desenvolvimento já existentes:
+A (criador), B (participante) e C (outra equipe). Faça login de cada uma em
+`/api/v1/auth/token/`, confira `/api/v1/auth/me/` e envie o access token nas
+requisições como `Authorization: Bearer <access>`. Use nomes e slugs novos.
+Guarde os IDs retornados para preencher os caminhos; para alterar um vínculo,
+use seu ID retornado pela API de membros, e não o ID da conta. O teste automatizado cria suas próprias contas
+fictícias somente no banco separado de testes.
+
+| Passo | Operação | Resultado esperado |
+| --- | --- | --- |
+| 1 | A cria organização e dois projetos pelos endpoints de organizações/projetos. C cria outra organização e um projeto nela. | 201; cada criador tem papel owner na sua organização. |
+| 2 | A cria uma tarefa em cada um dos seus projetos; C cria uma tarefa no projeto privado. POST de tarefa usa título e descrição opcional. | 201; status todo e autoria da conta autenticada. |
+| 3 | C consulta a tarefa/coleção de A. A consulta a coleção privada de C ou usa o ID da tarefa de outro projeto no caminho do primeiro. | 404; dados não expostos nem alterados. |
+| 4 | A adiciona B por POST em `/api/v1/organizations/{org_a}/memberships/`, com `user_id` de B. | 201; B tem papel member. Guarde o ID desse vínculo. |
+| 5 | B lista e consulta tarefas do primeiro projeto; tenta criar, editar conteúdo e mudar estado. | Leitura 200, sem misturar o segundo projeto; escritas 403. |
+| 6 | A altera só o título pelo PATCH individual da tarefa. | 200; descrição, autoria, projeto e estado preservados. |
+| 7 | A envia status in_progress, done e todo, depois conclui novamente. B consulta entre as mudanças. | 200; B acompanha o estado; reabrir não duplica nem exclui registros. |
+| 8 | A arquiva o projeto pelo PATCH de projeto com `is_archived:true`; B consulta a tarefa; A altera descrição e status juntos. | 200; tarefa continua disponível com as mesmas permissões. |
+| 9 | A restaura o projeto com `is_archived:false`. | 200; conteúdo e estado das tarefas preservados. |
+| 10 | A promove B pelo PATCH do vínculo, com `role:owner`. B conclui a tarefa usando o mesmo JWT. | 200; autoria continua sendo A. |
+| 11 | B rebaixa A pelo PATCH do vínculo de A, com `role:member`. A tenta editar e mudar estado usando o mesmo JWT. | A ainda consulta com 200; escritas 403. |
+| 12 | B tenta remover seu próprio vínculo, sendo o último owner; depois remove apenas o vínculo de A. | Primeira operação recebe 400; remoção de A recebe 204 e preserva conta, projeto e tarefas. |
+| 13 | A tenta consultar/alterar a tarefa ou consultar sua coleção. | 404 com o mesmo JWT, apesar de ser o criador. |
+| 14 | A renova o JWT em `/api/v1/auth/token/refresh/`, usando o refresh token do login inicial. | Perfil 200; coleção/tarefa continuam 404. Refresh não devolve participação. |
+| 15 | B reabre a tarefa e consulta a tarefa do segundo projeto. C consulta sua coleção privada. | 200; título, descrição, autoria, projeto e data de criação preservados; outras tarefas intactas. |
+
+O fluxo automatizado valida também a permanência de três contas, duas
+organizações, três projetos, três tarefas e os dois vínculos finais. Não é
+necessário criar dados de demonstração no banco local para executá-lo.
+Em um novo PowerShell na raiz do repositório:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/tasks/test_sprint4_flow.py --reuse-db -v --tb=short
+```
+
+Os testes específicos cobrem ainda valores inválidos, campos controlados,
+paginação, revogação concorrente e falhas de integridade com rollback real no
+PostgreSQL. As evidências e os critérios finais estão em [Sprint 4](docs/sprint-4.md).
 
 ## Validação local
 
