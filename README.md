@@ -97,7 +97,7 @@ No VS Code, selecione `.venv/Scripts/python.exe` como interpretador Python.
 | GET | `/api/v1/organizations/{organization_id}/projects/{project_id}/` | Participantes consultam um projeto dentro da organização autorizada. |
 | PATCH | `/api/v1/organizations/{organization_id}/projects/{project_id}/` | Proprietário edita nome/descrição e arquiva ou restaura o projeto. |
 | GET | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/` | Participante lista tarefas do projeto, com paginação. |
-| POST | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/` | Proprietário cria tarefa com título, descrição e responsável opcionais. |
+| POST | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/` | Proprietário cria tarefa com título obrigatório e descrição/responsável opcionais. |
 | GET | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/{task_id}/` | Participante consulta uma tarefa do projeto autorizado. |
 | PATCH | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/{task_id}/` | Proprietário altera título, descrição e/ou estado da tarefa. |
 
