@@ -277,14 +277,19 @@ def test_patch_rejects_controlled_and_unknown_fields(
 
 
 @pytest.mark.parametrize("state", ["todo", "in_progress", "done"])
-def test_patch_rejects_even_valid_status_until_delivery_3(
+def test_owner_patches_title_and_valid_status_together(
     api_client, task, detail_url, state
 ):
     response = api_client.patch(
         detail_url, {"title": "Attempt", "status": state}, format="json"
     )
-    assert response.status_code == 400 and "status" in response.data
-    assert_unchanged(task)
+    assert response.status_code == 200
+    before = snapshot(task)
+    task.refresh_from_db()
+    assert task.title == "Attempt" and task.status == state
+    assert task.description == before[1]
+    assert task.project_id == before[2] and task.created_by_id == before[3]
+    assert task.created_at == before[5]
 
 
 @pytest.mark.parametrize("payload", [[], "invalid", 123, None])

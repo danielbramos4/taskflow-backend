@@ -6,6 +6,7 @@ from apps.tasks.models import Task
 
 
 class TaskSerializer(serializers.ModelSerializer):
+    allowed_input_fields = {"title", "description"}
     project_id = serializers.IntegerField(read_only=True)
     created_by_id = serializers.IntegerField(read_only=True, allow_null=True)
 
@@ -32,7 +33,7 @@ class TaskSerializer(serializers.ModelSerializer):
 
     def to_internal_value(self, data):
         if isinstance(data, Mapping):
-            unexpected = set(data) - {"title", "description"}
+            unexpected = set(data) - self.allowed_input_fields
             if unexpected:
                 raise serializers.ValidationError(
                     {field: ["Campo não permitido."] for field in sorted(unexpected)}
@@ -45,3 +46,13 @@ class TaskSerializer(serializers.ModelSerializer):
         if validated_data:
             instance.save(update_fields=[*validated_data, "updated_at"])
         return instance
+
+
+class TaskUpdateSerializer(TaskSerializer):
+    status = serializers.ChoiceField(choices=Task.Status.choices, required=False)
+    allowed_input_fields = TaskSerializer.allowed_input_fields | {"status"}
+
+    class Meta(TaskSerializer.Meta):
+        read_only_fields = [
+            field for field in TaskSerializer.Meta.read_only_fields if field != "status"
+        ]

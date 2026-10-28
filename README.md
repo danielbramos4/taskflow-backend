@@ -8,9 +8,9 @@ Organizações e permissões foram concluídas na [Sprint 2](docs/sprint-2.md),
 com as quatro entregas e seus critérios de aceite validados.
 Projetos por organização foram concluídos na [Sprint 3](docs/sprint-3.md),
 com as quatro entregas e seus critérios de aceite validados.
-A [Sprint 4](docs/sprint-4.md) trata de tarefas por projeto. As Entregas 1 e 2
-oferecem criação, listagem, consulta e edição individual. A mudança de estado
-continua planejada para a Entrega 3.
+A [Sprint 4](docs/sprint-4.md) trata de tarefas por projeto. As Entregas 1 a 3
+oferecem criação, listagem, consulta, edição e mudança de estado. A validação
+do fluxo completo e o encerramento ficam para a Entrega 4.
 
 ## Requisitos
 
@@ -97,7 +97,7 @@ No VS Code, selecione `.venv/Scripts/python.exe` como interpretador Python.
 | GET | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/` | Participante lista tarefas do projeto, com paginação. |
 | POST | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/` | Proprietário cria tarefa com título e descrição opcional. |
 | GET | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/{task_id}/` | Participante consulta uma tarefa do projeto autorizado. |
-| PATCH | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/{task_id}/` | Proprietário altera título e/ou descrição da tarefa. |
+| PATCH | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/{task_id}/` | Proprietário altera título, descrição e/ou estado da tarefa. |
 
 As quatro entregas da Sprint 2 estão concluídas: organizações, administração
 de membros, validação do fluxo completo e fechamento dos critérios de aceite.
@@ -479,7 +479,7 @@ organização, autor, datas, identidade ou campos extras recebe 400. Corpos que 
 são objetos JSON e campos inválidos também recebem 400. JWT ausente/inválido:
 401; member tentando criar: 403; organização sem vínculo ou projeto fora do
 caminho: 404. Métodos não oferecidos: 405. Consulta/edição individual são
-descritas na Entrega 2 abaixo; troca de status fica para a Entrega 3. Não há
+descritas na Entrega 2 abaixo; troca de status é descrita na Entrega 3. Não há
 DELETE. Falha inesperada de integridade
 retorna 500 genérico e não persiste a tarefa, inclusive em erro adiado ao commit.
 
@@ -508,7 +508,8 @@ projeto do caminho, e o projeto à organização autorizada. Trocar qualquer ID
 para apontar a outro pai não expõe nem altera o recurso, mesmo para quem é
 owner das duas organizações. Parâmetros de consulta não trocam o alvo.
 
-PATCH de owner aceita somente `title` e/ou `description`. Por exemplo:
+PATCH de owner aceita `title` e/ou `description` e, com a Entrega 3, `status`.
+Exemplo de edição do conteúdo:
 
 ```json
 {"title": "Revisar critérios", "description": "Conferir o aceite com a equipe"}
@@ -520,9 +521,9 @@ descrição null e limites excedidos recebem 400. PATCH vazio retorna 200 sem
 alterar dados nem `updated_at`. Uma alteração válida atualiza essa data e salva
 somente os campos enviados, preservando mudanças concorrentes em campos omitidos.
 
-Identidade, projeto, organização, autor, datas, status e campos inesperados são
-rejeitados com 400, sem alterar nenhum campo. Isso inclui enviar status `todo`,
-`in_progress` ou `done`: sua alteração será acrescentada na Entrega 3. Tarefas de
+Identidade, projeto, organização, autor, datas e campos inesperados são
+rejeitados com 400, sem alterar nenhum campo. Na Entrega 2, status também ficava
+protegido; a Entrega 3 acrescenta sua alteração, conforme descrito abaixo. Tarefas de
 projetos arquivados continuam consultáveis e editáveis pelos mesmos papéis.
 
 JWT inválido/ausente recebe 401; member consulta com 200 e recebe 403 ao editar.
@@ -541,6 +542,50 @@ um novo terminal PowerShell na raiz do repositório:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest tests/tasks/test_detail_api.py tests/tasks/test_detail_concurrency.py --reuse-db -v --tb=short
+```
+
+## Estado das tarefas — Sprint 4, Entrega 3
+
+O proprietário altera o estado pelo mesmo PATCH individual:
+`/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/{task_id}/`.
+
+| Valor JSON de `status` | Significado |
+| --- | --- |
+| `todo` | A fazer. |
+| `in_progress` | Em andamento. |
+| `done` | Concluída. |
+
+Exemplo para concluir uma tarefa:
+
+```json
+{"status": "done"}
+```
+
+Retorno 200 com a tarefa atualizada. São permitidas todas as transições, inclusive
+concluir diretamente uma tarefa a fazer e reabrir uma concluída com `todo` ou
+`in_progress`. Repetir o mesmo estado retorna 200 sem duplicar ou remover
+registros. O estado omitido no PATCH mantém seu valor; PATCH vazio preserva
+também updated_at. A criação continua aceitando somente título e descrição,
+com status inicial `todo`; enviar status no POST, mesmo `todo`, recebe 400.
+
+Os valores são strings exatas, em minúsculas, sem espaços extras. Outros textos,
+null, números, booleanos, listas e objetos recebem 400. É possível combinar
+título, descrição e status no mesmo PATCH. Se qualquer campo for inválido ou
+proibido, nenhum deles é alterado. Mudança de estado preserva título e descrição
+omitidos, autoria, projeto, organização, data de criação, contas e vínculos.
+
+Somente owners alteram estados. Members consultam o estado e recebem 403 ao
+tentar alterá-lo; externos recebem 404; JWT ausente/inválido recebe 401. IDs e
+autoria não ampliam acesso. Promoção, rebaixamento e remoção de vínculo valem
+com o mesmo JWT e após a espera pelo bloqueio da organização. Projetos
+arquivados mantêm as mesmas regras. Não há exclusão de tarefas pela API.
+
+A edição usa a mesma transação e atualização parcial da Entrega 2; falhas de
+integridade, inclusive ao commit, desfazem a mudança com erro genérico. Não há
+alteração de modelos nem nova migração. Para validar em um novo PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/tasks/test_status_api.py tests/tasks/test_detail_concurrency.py --reuse-db -v --tb=short
 ```
 
 ## Validação local
