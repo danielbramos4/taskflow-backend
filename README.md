@@ -97,7 +97,7 @@ No VS Code, selecione `.venv/Scripts/python.exe` como interpretador Python.
 | GET | `/api/v1/organizations/{organization_id}/projects/{project_id}/` | Participantes consultam um projeto dentro da organização autorizada. |
 | PATCH | `/api/v1/organizations/{organization_id}/projects/{project_id}/` | Proprietário edita nome/descrição e arquiva ou restaura o projeto. |
 | GET | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/` | Participante lista tarefas do projeto, com paginação. |
-| POST | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/` | Proprietário cria tarefa com título e descrição opcional. |
+| POST | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/` | Proprietário cria tarefa com título, descrição e responsável opcionais. |
 | GET | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/{task_id}/` | Participante consulta uma tarefa do projeto autorizado. |
 | PATCH | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/{task_id}/` | Proprietário altera título, descrição e/ou estado da tarefa. |
 
@@ -467,7 +467,8 @@ Exemplo de corpo POST, com JWT do proprietário:
 ```
 
 Retorno 201: `id`, `project_id`, `title`, `description`, `status`, `created_by_id`,
-`created_at`, `updated_at`. O servidor define projeto e autor; o status inicial
+`created_at`, `updated_at` e os dois campos de responsável descritos na Sprint 5.
+O servidor define projeto e autor; o status inicial
 é `todo`. Título obrigatório, até 150 caracteres, sem vazio após remover espaços
 nas extremidades. Descrição opcional, padrão vazio, até 5.000 caracteres,
 sem null. Títulos repetidos são permitidos.
@@ -476,7 +477,8 @@ GET retorna 200 com `count`, `next`, `previous`, `results`, 20 tarefas por pági
 ordenadas por `created_at, id`. Use `?page=2` para a próxima página. Não há
 filtros nesta entrega; parâmetros de projeto ou organização não alteram o alvo.
 
-POST aceita somente título e descrição. Enviar status, mesmo `todo`, projeto,
+POST aceita título, descrição e, desde a Sprint 5, assignee_membership_id.
+Enviar status, mesmo `todo`, projeto,
 organização, autor, datas, identidade ou campos extras recebe 400. Corpos que não
 são objetos JSON e campos inválidos também recebem 400. JWT ausente/inválido:
 401; member tentando criar: 403; organização sem vínculo ou projeto fora do
@@ -510,7 +512,8 @@ projeto do caminho, e o projeto à organização autorizada. Trocar qualquer ID
 para apontar a outro pai não expõe nem altera o recurso, mesmo para quem é
 owner das duas organizações. Parâmetros de consulta não trocam o alvo.
 
-PATCH de owner aceita `title` e/ou `description` e, com a Entrega 3, `status`.
+PATCH de owner aceita `title`, `description`, `status` e, desde a Sprint 5,
+`assignee_membership_id` (descrito na seção de responsáveis abaixo).
 Exemplo de edição do conteúdo:
 
 ```json
@@ -567,8 +570,9 @@ Retorno 200 com a tarefa atualizada. São permitidas todas as transições, incl
 concluir diretamente uma tarefa a fazer e reabrir uma concluída com `todo` ou
 `in_progress`. Repetir o mesmo estado retorna 200 sem duplicar ou remover
 registros. O estado omitido no PATCH mantém seu valor; PATCH vazio preserva
-também updated_at. A criação continua aceitando somente título e descrição,
-com status inicial `todo`; enviar status no POST, mesmo `todo`, recebe 400.
+também updated_at. A criação aceita título, descrição e o responsável opcional
+descrito na Sprint 5, com status inicial `todo`; enviar status no POST, mesmo
+`todo`, recebe 400.
 
 Os valores são strings exatas, em minúsculas, sem espaços extras. Outros textos,
 null, números, booleanos, listas e objetos recebem 400. É possível combinar
