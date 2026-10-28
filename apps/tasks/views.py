@@ -20,7 +20,16 @@ class TaskAccessMixin(OrganizationAccessMixin):
         )
 
     def get_queryset(self):
-        return Task.objects.filter(project=self.project).order_by("created_at", "id")
+        return (
+            Task.objects.filter(project=self.project)
+            .select_related("assignee")
+            .order_by("created_at", "id")
+        )
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["organization"] = getattr(self, "organization", None)
+        return context
 
     def get_object(self):
         # Both parents are checked before task lookup.

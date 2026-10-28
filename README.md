@@ -11,6 +11,8 @@ com as quatro entregas e seus critérios de aceite validados.
 Tarefas por projeto foram concluídas na [Sprint 4](docs/sprint-4.md), com criação,
 listagem, consulta, edição, mudança de estado e validação do fluxo completo.
 As quatro entregas e seus critérios de aceite estão concluídos.
+A [Sprint 5](docs/sprint-5.md) acrescenta responsáveis e prazos. A Entrega 1
+permite definir responsáveis; prazos e filtros permanecem planejados.
 
 ## Requisitos
 
@@ -95,7 +97,7 @@ No VS Code, selecione `.venv/Scripts/python.exe` como interpretador Python.
 | GET | `/api/v1/organizations/{organization_id}/projects/{project_id}/` | Participantes consultam um projeto dentro da organização autorizada. |
 | PATCH | `/api/v1/organizations/{organization_id}/projects/{project_id}/` | Proprietário edita nome/descrição e arquiva ou restaura o projeto. |
 | GET | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/` | Participante lista tarefas do projeto, com paginação. |
-| POST | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/` | Proprietário cria tarefa com título e descrição opcional. |
+| POST | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/` | Proprietário cria tarefa com título obrigatório e descrição/responsável opcionais. |
 | GET | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/{task_id}/` | Participante consulta uma tarefa do projeto autorizado. |
 | PATCH | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/{task_id}/` | Proprietário altera título, descrição e/ou estado da tarefa. |
 
@@ -465,7 +467,8 @@ Exemplo de corpo POST, com JWT do proprietário:
 ```
 
 Retorno 201: `id`, `project_id`, `title`, `description`, `status`, `created_by_id`,
-`created_at`, `updated_at`. O servidor define projeto e autor; o status inicial
+`created_at`, `updated_at` e os dois campos de responsável descritos na Sprint 5.
+O servidor define projeto e autor; o status inicial
 é `todo`. Título obrigatório, até 150 caracteres, sem vazio após remover espaços
 nas extremidades. Descrição opcional, padrão vazio, até 5.000 caracteres,
 sem null. Títulos repetidos são permitidos.
@@ -474,7 +477,8 @@ GET retorna 200 com `count`, `next`, `previous`, `results`, 20 tarefas por pági
 ordenadas por `created_at, id`. Use `?page=2` para a próxima página. Não há
 filtros nesta entrega; parâmetros de projeto ou organização não alteram o alvo.
 
-POST aceita somente título e descrição. Enviar status, mesmo `todo`, projeto,
+POST aceita título, descrição e, desde a Sprint 5, assignee_membership_id.
+Enviar status, mesmo `todo`, projeto,
 organização, autor, datas, identidade ou campos extras recebe 400. Corpos que não
 são objetos JSON e campos inválidos também recebem 400. JWT ausente/inválido:
 401; member tentando criar: 403; organização sem vínculo ou projeto fora do
@@ -508,7 +512,8 @@ projeto do caminho, e o projeto à organização autorizada. Trocar qualquer ID
 para apontar a outro pai não expõe nem altera o recurso, mesmo para quem é
 owner das duas organizações. Parâmetros de consulta não trocam o alvo.
 
-PATCH de owner aceita `title` e/ou `description` e, com a Entrega 3, `status`.
+PATCH de owner aceita `title`, `description`, `status` e, desde a Sprint 5,
+`assignee_membership_id` (descrito na seção de responsáveis abaixo).
 Exemplo de edição do conteúdo:
 
 ```json
@@ -565,8 +570,9 @@ Retorno 200 com a tarefa atualizada. São permitidas todas as transições, incl
 concluir diretamente uma tarefa a fazer e reabrir uma concluída com `todo` ou
 `in_progress`. Repetir o mesmo estado retorna 200 sem duplicar ou remover
 registros. O estado omitido no PATCH mantém seu valor; PATCH vazio preserva
-também updated_at. A criação continua aceitando somente título e descrição,
-com status inicial `todo`; enviar status no POST, mesmo `todo`, recebe 400.
+também updated_at. A criação aceita título, descrição e o responsável opcional
+descrito na Sprint 5, com status inicial `todo`; enviar status no POST, mesmo
+`todo`, recebe 400.
 
 Os valores são strings exatas, em minúsculas, sem espaços extras. Outros textos,
 null, números, booleanos, listas e objetos recebem 400. É possível combinar
@@ -628,6 +634,66 @@ Em um novo PowerShell na raiz do repositório:
 Os testes específicos cobrem ainda valores inválidos, campos controlados,
 paginação, revogação concorrente e falhas de integridade com rollback real no
 PostgreSQL. As evidências e os critérios finais estão em [Sprint 4](docs/sprint-4.md).
+
+## Responsáveis pelas tarefas — Sprint 5, Entrega 1
+
+Owners podem definir um responsável opcional na criação e edição das tarefas,
+pelos mesmos endpoints POST/PATCH. Primeiro consulte
+`/api/v1/organizations/{organization_id}/memberships/` e use o campo `id` do
+vínculo desejado em `assignee_membership_id`. Esse é o ID do vínculo, que deve
+pertencer à organização do projeto; não use o ID da conta (`user_id`).
+
+Exemplos de corpo:
+
+```json
+{"title": "Revisar entrega", "assignee_membership_id": 123}
+```
+
+```json
+{"assignee_membership_id": null}
+```
+
+O primeiro exemplifica um POST com título e vínculo fictício; substitua 123
+pelo ID real retornado na lista de membros. O segundo é um PATCH para deixar
+a tarefa sem responsável. PATCH também permite trocar o vínculo, combinar
+responsável com título, descrição e status, ou omiti-lo para manter a atribuição.
+O POST continua criando com status todo e rejeitando status enviado pelo cliente.
+
+Respostas de coleção/detalhe/criação/edição acrescentam `assignee_membership_id`
+e `assignee_user_id`. O segundo campo é somente leitura e identifica a conta
+do vínculo; ambos são null quando a tarefa está sem responsável. Não incluem
+e-mail, senha ou tokens. Os demais campos das tarefas continuam disponíveis.
+
+O responsável precisa ser participante da mesma organização, com conta ativa
+no momento da atribuição. Owners e members são elegíveis. Responsabilidade não
+altera permissões: owners administram; members consultam, inclusive quando
+responsáveis. Projetos arquivados mantêm as mesmas regras.
+
+Ao remover o vínculo do responsável, a tarefa fica sem responsável, com seu
+conteúdo, autoria, projeto e datas preservados. A conta não é excluída. Reingresso
+não restaura atribuições antigas. A exclusão administrativa da conta também
+limpa o responsável por remover seus vínculos, preservando tarefas. A limpeza
+por SET_NULL não altera updated_at; um PATCH válido continua atualizando essa data.
+
+Vínculos inexistentes, removidos, de outra organização ou de conta inativa
+recebem 400. Enviar assignee_user_id ou nomes alternativos como assignee_id
+também recebe 400. Um campo inválido impede toda a escrita. As regras anteriores
+de JWT (401), member sem escrita (403), isolamento de organização/projeto (404)
+e rollback de integridade com mensagem genérica permanecem em vigor. A permissão
+e a elegibilidade do vínculo são conferidas depois da espera pelo bloqueio.
+
+A migração `tasks.0002_task_assignee` acrescenta somente um vínculo opcional,
+índice e chave estrangeira. Tarefas existentes ficam sem responsável. Para
+atualizar outra instalação, em um novo PowerShell na raiz do repositório:
+
+```powershell
+.\.venv\Scripts\python.exe manage.py migrate --plan
+.\.venv\Scripts\python.exe manage.py migrate
+.\.venv\Scripts\python.exe -m pytest tests/tasks/test_assignee_api.py tests/tasks/test_assignee_concurrency.py --reuse-db -v --tb=short
+```
+
+Mantenha o `.env` e a senha que já funciona; não recrie volumes. O planejamento
+e as evidências de validação estão em [Sprint 5](docs/sprint-5.md).
 
 ## Validação local
 

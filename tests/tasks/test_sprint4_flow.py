@@ -111,6 +111,8 @@ def test_sprint4_complete_flow_preserves_tasks_isolation_ownership_and_auth(
         "title",
         "description",
         "status",
+        "assignee_membership_id",
+        "assignee_user_id",
         "created_by_id",
         "created_at",
         "updated_at",
