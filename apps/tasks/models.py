@@ -16,6 +16,13 @@ class Task(models.Model):
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.TODO
     )
+    assignee = models.ForeignKey(
+        "organizations.Membership",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assigned_tasks",
+    )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

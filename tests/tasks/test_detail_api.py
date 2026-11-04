@@ -84,6 +84,8 @@ def test_participants_read_task_in_active_or_archived_project(
         "title",
         "description",
         "status",
+        "assignee_membership_id",
+        "assignee_user_id",
         "created_by_id",
         "created_at",
         "updated_at",
