@@ -1,0 +1,14 @@
+*
+!requirements.txt
+!requirements-production.txt
+!manage.py
+!config/
+!config/**
+!apps/
+!apps/**
+!deploy/
+!deploy/start.sh
+**/.env*
+**/__pycache__
+**/*.pyc
+**/*.log

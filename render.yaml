@@ -1,0 +1,23 @@
+databases:
+  - name: taskflow-db
+    databaseName: taskflow
+    user: taskflow
+    plan: free
+    ipAllowList: []
+
+services:
+  - type: web
+    name: taskflow-web
+    runtime: docker
+    plan: free
+    branch: main
+    healthCheckPath: /health/
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: taskflow-db
+          property: connectionString
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: TASKFLOW_ADMIN_PASSWORD
+        sync: false
