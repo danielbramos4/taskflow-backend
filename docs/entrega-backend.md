@@ -19,19 +19,34 @@ docker compose up -d db
 .\.venv\Scripts\python.exe manage.py runserver
 ```
 
-A API estará em `http://127.0.0.1:8000/api/v1/`. Para uma instalação vazia,
-`manage.py createsuperuser` cria a primeira conta de desenvolvimento. Use essa
-conta no `/admin/` para cadastrar outras contas que participarão da demonstração.
+A API estará em `http://127.0.0.1:8000/api/v1/`. Em um segundo PowerShell,
+use `manage.py shell` para criar contas de demonstração no banco local.
+Abra o console com `.\.venv\Scripts\python.exe manage.py shell` e execute:
+
+```python
+from getpass import getpass
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+User.objects.create_user(username="demo_owner", password=getpass("Senha do proprietário: "))
+User.objects.create_user(username="demo_member", password=getpass("Senha do membro: "))
+```
+
+Use nomes livres ou aproveite contas de desenvolvimento já existentes. As senhas
+digitadas não são mostradas pelo console.
 
 ## Demonstrar a API
 
 1. Obtenha um token com `POST /api/v1/auth/token/`, enviando `username` e
    `password`. Nas demais requisições, use `Authorization: Bearer <access>`.
-2. Crie uma organização com `POST /api/v1/organizations/` e um projeto com
-   `POST /api/v1/organizations/{org}/projects/`. Cada rota devolve seu `id`.
+2. Com a conta `demo_owner`, crie uma organização com
+   `POST /api/v1/organizations/` e `{"name":"Demonstração","slug":"demonstracao"}`.
+   Crie um projeto com `POST /api/v1/organizations/{org}/projects/` e
+   `{"name":"Entrega"}`. Cada rota devolve seu `id`.
 3. Adicione uma conta ativa com `POST /api/v1/organizations/{org}/memberships/`
-   e o corpo `{"user_id": 42}`, substituindo `42` pelo ID da conta. Guarde o
-   `id` do vínculo retornado para atribuir a tarefa.
+   e o corpo `{"user_id": 42}`, substituindo `42` pelo ID da conta `demo_member`,
+   obtido em `GET /api/v1/auth/me/` com o token desse membro. Guarde o `id` do
+   vínculo retornado para atribuir a tarefa.
 4. Crie a tarefa em `POST /api/v1/organizations/{org}/projects/{projeto}/tasks/`:
 
    ```json
