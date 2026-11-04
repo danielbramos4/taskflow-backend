@@ -11,8 +11,9 @@ com as quatro entregas e seus critérios de aceite validados.
 Tarefas por projeto foram concluídas na [Sprint 4](docs/sprint-4.md), com criação,
 listagem, consulta, edição, mudança de estado e validação do fluxo completo.
 As quatro entregas e seus critérios de aceite estão concluídos.
-A [Sprint 5](docs/sprint-5.md) acrescenta responsáveis e prazos. A Entrega 1
-permite definir responsáveis; prazos e filtros permanecem planejados.
+A [Sprint 5](docs/sprint-5.md) acrescenta responsáveis, prazos opcionais e filtros
+por responsável e data. Consulte o [guia da entrega final](docs/entrega-backend.md)
+para instalar, verificar e testar o backend completo.
 
 ## Requisitos
 
@@ -96,10 +97,10 @@ No VS Code, selecione `.venv/Scripts/python.exe` como interpretador Python.
 | POST | `/api/v1/organizations/{organization_id}/projects/` | Proprietário cria projeto, com organização e autoria definidas no servidor. |
 | GET | `/api/v1/organizations/{organization_id}/projects/{project_id}/` | Participantes consultam um projeto dentro da organização autorizada. |
 | PATCH | `/api/v1/organizations/{organization_id}/projects/{project_id}/` | Proprietário edita nome/descrição e arquiva ou restaura o projeto. |
-| GET | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/` | Participante lista tarefas do projeto, com paginação. |
-| POST | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/` | Proprietário cria tarefa com título obrigatório e descrição/responsável opcionais. |
+| GET | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/` | Participante lista tarefas do projeto, com paginação e filtros opcionais de responsável e prazo. |
+| POST | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/` | Proprietário cria tarefa com título obrigatório e descrição, responsável e prazo opcionais. |
 | GET | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/{task_id}/` | Participante consulta uma tarefa do projeto autorizado. |
-| PATCH | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/{task_id}/` | Proprietário altera título, descrição e/ou estado da tarefa. |
+| PATCH | `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/{task_id}/` | Proprietário altera título, descrição, estado, responsável e/ou prazo da tarefa. |
 
 As quatro entregas da Sprint 2 estão concluídas: organizações, administração
 de membros, validação do fluxo completo e fechamento dos critérios de aceite.
@@ -467,19 +468,19 @@ Exemplo de corpo POST, com JWT do proprietário:
 ```
 
 Retorno 201: `id`, `project_id`, `title`, `description`, `status`, `created_by_id`,
-`created_at`, `updated_at` e os dois campos de responsável descritos na Sprint 5.
+`created_at`, `updated_at`, `due_date` e os dois campos de responsável descritos na Sprint 5.
 O servidor define projeto e autor; o status inicial
 é `todo`. Título obrigatório, até 150 caracteres, sem vazio após remover espaços
 nas extremidades. Descrição opcional, padrão vazio, até 5.000 caracteres,
 sem null. Títulos repetidos são permitidos.
 
 GET retorna 200 com `count`, `next`, `previous`, `results`, 20 tarefas por página,
-ordenadas por `created_at, id`. Use `?page=2` para a próxima página. Não há
-filtros nesta entrega; parâmetros de projeto ou organização não alteram o alvo.
+ordenadas por `created_at, id`. Use `?page=2` para a próxima página. Os filtros
+estão descritos na Sprint 5; parâmetros de projeto ou organização não alteram o alvo.
 
-POST aceita título, descrição e, desde a Sprint 5, assignee_membership_id.
-Enviar status, mesmo `todo`, projeto,
-organização, autor, datas, identidade ou campos extras recebe 400. Corpos que não
+POST aceita título, descrição, `assignee_membership_id` e `due_date`.
+Enviar status, mesmo `todo`, projeto, organização, autor, datas de auditoria,
+identidade ou campos extras recebe 400. Corpos que não
 são objetos JSON e campos inválidos também recebem 400. JWT ausente/inválido:
 401; member tentando criar: 403; organização sem vínculo ou projeto fora do
 caminho: 404. Métodos não oferecidos: 405. Consulta/edição individual são
@@ -512,8 +513,8 @@ projeto do caminho, e o projeto à organização autorizada. Trocar qualquer ID
 para apontar a outro pai não expõe nem altera o recurso, mesmo para quem é
 owner das duas organizações. Parâmetros de consulta não trocam o alvo.
 
-PATCH de owner aceita `title`, `description`, `status` e, desde a Sprint 5,
-`assignee_membership_id` (descrito na seção de responsáveis abaixo).
+PATCH de owner aceita `title`, `description`, `status`, `assignee_membership_id`
+e `due_date` (descritos nas seções da Sprint 5 abaixo).
 Exemplo de edição do conteúdo:
 
 ```json
@@ -570,8 +571,8 @@ Retorno 200 com a tarefa atualizada. São permitidas todas as transições, incl
 concluir diretamente uma tarefa a fazer e reabrir uma concluída com `todo` ou
 `in_progress`. Repetir o mesmo estado retorna 200 sem duplicar ou remover
 registros. O estado omitido no PATCH mantém seu valor; PATCH vazio preserva
-também updated_at. A criação aceita título, descrição e o responsável opcional
-descrito na Sprint 5, com status inicial `todo`; enviar status no POST, mesmo
+também updated_at. A criação aceita título, descrição, responsável e prazo,
+com status inicial `todo`; enviar status no POST, mesmo
 `todo`, recebe 400.
 
 Os valores são strings exatas, em minúsculas, sem espaços extras. Outros textos,
@@ -694,6 +695,22 @@ atualizar outra instalação, em um novo PowerShell na raiz do repositório:
 
 Mantenha o `.env` e a senha que já funciona; não recrie volumes. O planejamento
 e as evidências de validação estão em [Sprint 5](docs/sprint-5.md).
+
+## Prazos e filtros das tarefas — Sprint 5
+
+O campo `due_date` aparece nas respostas de tarefas e é opcional no `POST` e
+no `PATCH`. Aceita uma data de calendário como `"2026-11-12"` ou `null`. No
+`PATCH`, omitir o campo preserva o prazo; enviar `null` remove o prazo. Datas
+passadas são válidas e não mudam o estado da tarefa. A migração
+`tasks.0003_task_due_date` acrescenta uma coluna opcional; tarefas existentes
+ficam sem prazo até que um proprietário o defina.
+
+No `GET` da coleção de tarefas, use `assignee_membership_id` com o ID do
+vínculo ou `unassigned` para tarefas sem responsável. Use `due_from` e
+`due_to` para limites inclusivos de prazo. Os filtros podem ser combinados;
+quando há um limite de data, tarefas sem prazo ficam fora do resultado.
+Datas inválidas, intervalo invertido e parâmetros de filtro repetidos
+retornam `400`. A paginação e o isolamento entre projetos são preservados.
 
 ## Validação local
 

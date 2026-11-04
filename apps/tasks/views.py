@@ -5,6 +5,7 @@ from rest_framework.response import Response
 
 from apps.organizations.views import OrganizationAccessMixin
 from apps.projects.models import Project
+from apps.tasks.filters import TaskFilters
 from apps.tasks.models import Task
 from apps.tasks.pagination import TaskPagination
 from apps.tasks.serializers import TaskSerializer, TaskUpdateSerializer
@@ -38,6 +39,11 @@ class TaskAccessMixin(OrganizationAccessMixin):
 
 class TaskListCreateView(TaskAccessMixin, ListCreateAPIView):
     pagination_class = TaskPagination
+
+    def filter_queryset(self, queryset):
+        filters = TaskFilters(data=self.request.query_params)
+        filters.is_valid(raise_exception=True)
+        return filters.apply(super().filter_queryset(queryset))
 
     def list(self, request, *args, **kwargs):
         self.organization = self.get_organization()

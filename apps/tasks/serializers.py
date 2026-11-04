@@ -1,3 +1,4 @@
+import re
 from collections.abc import Mapping
 
 from rest_framework import serializers
@@ -6,8 +7,23 @@ from apps.organizations.models import Membership
 from apps.tasks.models import Task
 
 
+class ISODateField(serializers.DateField):
+    def to_internal_value(self, value):
+        if not isinstance(value, str) or not re.fullmatch(
+            r"[0-9]{4}-[0-9]{2}-[0-9]{2}", value
+        ):
+            self.fail("invalid", format="YYYY-MM-DD")
+        return super().to_internal_value(value)
+
+
 class TaskSerializer(serializers.ModelSerializer):
-    allowed_input_fields = {"title", "description", "assignee_membership_id"}
+    allowed_input_fields = {
+        "title",
+        "description",
+        "assignee_membership_id",
+        "due_date",
+    }
+    due_date = ISODateField(required=False, allow_null=True)
     assignee_membership_id = serializers.PrimaryKeyRelatedField(
         source="assignee",
         queryset=Membership.objects.none(),
@@ -30,6 +46,7 @@ class TaskSerializer(serializers.ModelSerializer):
             "status",
             "assignee_membership_id",
             "assignee_user_id",
+            "due_date",
             "created_by_id",
             "created_at",
             "updated_at",
