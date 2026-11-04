@@ -27,7 +27,7 @@ O PATCH altera updated_at quando modifica a tarefa. A limpeza automática pela
 exclusão do vínculo usa SET_NULL e preserva as demais colunas, inclusive datas.
 Projetos arquivados mantêm as mesmas regras de acesso e administração.
 
-## Contrato da Entrega 1
+## Contrato dos responsáveis
 
 Os endpoints de tarefas existentes permanecem nos mesmos caminhos:
 `/api/v1/organizations/{organization_id}/projects/{project_id}/tasks/`
@@ -44,9 +44,9 @@ coleção de membros da organização e use seu campo `id`, não `user_id`. O ID
 vínculo de outra organização é rejeitado mesmo quando a mesma pessoa participa
 das duas equipes ou o solicitante é owner de ambas.
 
-POST aceita título, descrição opcional e assignee_membership_id opcional;
+POST aceita título, descrição, assignee_membership_id e due_date;
 continua criando com status todo e rejeitando status enviado pelo cliente.
-PATCH aceita título, descrição, status e assignee_membership_id. O responsável
+PATCH aceita título, descrição, status, assignee_membership_id e due_date. O responsável
 omitido é preservado; enviar null remove apenas a atribuição. Não há novo método
 nem autorização por responsável. Campos de identidade, vínculos de projeto,
 autoria, datas, assignee_user_id e nomes alternativos como assignee_id recebem
@@ -74,42 +74,42 @@ adicional por responsável a cada linha.
 - [x] Testar papéis, isolamento, campos inválidos, projetos arquivados e consultas da coleção.
 - [x] Testar solicitante/vínculo alterado durante espera e rollback real no PostgreSQL.
 - [x] Validar migração, base anterior, qualidade e documentar a validação no PowerShell.
-- [ ] Integrar após revisão e CI aprovado.
+- [x] Integrar após revisão e CI aprovado.
 
 ## Entrega 2 — prazos opcionais
 
-- [ ] Acrescentar due_date opcional em formato de data YYYY-MM-DD, sem horário.
-- [ ] Permitir owner informar, alterar, omitir ou limpar o prazo com null.
-- [ ] Aceitar datas passadas para registrar pendências, sem mudar status automaticamente.
-- [ ] Preservar a independência entre prazo, responsabilidade e estado da tarefa.
-- [ ] Validar datas, campos combinados, papéis, migração e concorrência; documentar e conferir CI.
+- [x] Acrescentar due_date opcional em formato de data YYYY-MM-DD, sem horário.
+- [x] Permitir owner informar, alterar, omitir ou limpar o prazo com null.
+- [x] Aceitar datas passadas para registrar pendências, sem mudar status automaticamente.
+- [x] Preservar a independência entre prazo, responsabilidade e estado da tarefa.
+- [x] Validar datas, campos combinados, papéis, migração e concorrência; documentar e conferir CI.
 
 ## Entrega 3 — consultas por responsável e prazo
 
-- [ ] Filtrar a coleção do projeto por vínculo responsável e tarefas sem responsável.
-- [ ] Filtrar por intervalo de datas de prazo, com limites explícitos e datas válidas.
-- [ ] Combinar filtros sem ampliar acesso a outros projetos ou organizações.
-- [ ] Manter paginação e ordenação estáveis; testar erros, isolamento e conferir CI.
+- [x] Filtrar a coleção do projeto por vínculo responsável e tarefas sem responsável.
+- [x] Filtrar por intervalo de datas de prazo, com limites explícitos e datas válidas.
+- [x] Combinar filtros sem ampliar acesso a outros projetos ou organizações.
+- [x] Manter paginação e ordenação estáveis; testar erros, isolamento e conferir CI.
 
 ## Entrega 4 — fluxo completo e encerramento
 
-- [ ] Validar atribuição, prazo, consulta, remoção de vínculo e reingresso com JWT real.
-- [ ] Aprovar suíte anterior e nova no PostgreSQL e no CI.
-- [ ] Conferir preservação de dados, credenciais, volumes e arquivos preexistentes.
-- [ ] Integrar as entregas após checks e registrar o aceite completo.
+- [x] Validar atribuição, prazo, consulta, remoção de vínculo e reingresso com JWT real.
+- [x] Aprovar suíte anterior e nova no PostgreSQL e no CI.
+- [x] Conferir preservação de dados, credenciais, volumes e arquivos preexistentes.
+- [x] Integrar as entregas após checks e registrar o aceite completo.
 
 ## Critérios de aceitação
 
-- [ ] Responsável é opcional e pertence à organização da tarefa no momento da atribuição.
-- [ ] Responsabilidade não amplia acesso nem substitui autoria/papel.
-- [ ] Remoção de vínculo limpa a atribuição e preserva a tarefa; reingresso não a restaura.
-- [ ] Prazo opcional segue o contrato de data, sem alterar status automaticamente.
-- [ ] Campos omitidos e erros de validação preservam valores e relacionamentos.
-- [ ] Filtros respeitam organização/projeto, paginação e validação.
-- [ ] Revogação durante espera e falhas de integridade não deixam escritas indevidas.
-- [ ] Sprints anteriores e fluxo novo passam no PostgreSQL local e no CI.
-- [ ] Migrações aditivas; segredos, dados, arquivos locais e volumes preservados.
-- [ ] Documentação e PRs correspondem ao comportamento integrado.
+- [x] Responsável é opcional e pertence à organização da tarefa no momento da atribuição.
+- [x] Responsabilidade não amplia acesso nem substitui autoria/papel.
+- [x] Remoção de vínculo limpa a atribuição e preserva a tarefa; reingresso não a restaura.
+- [x] Prazo opcional segue o contrato de data, sem alterar status automaticamente.
+- [x] Campos omitidos e erros de validação preservam valores e relacionamentos.
+- [x] Filtros respeitam organização/projeto, paginação e validação.
+- [x] Revogação durante espera e falhas de integridade não deixam escritas indevidas.
+- [x] Sprints anteriores e fluxo novo passam no PostgreSQL local e no CI.
+- [x] Migrações aditivas; segredos, dados, arquivos locais e volumes preservados.
+- [x] Documentação e PRs correspondem ao comportamento integrado.
 
 ## Limites
 
@@ -144,6 +144,20 @@ Os 86 arquivos protegidos, incluindo os sete arquivos locais não versionados,
 foram preservados por hash. Credenciais, Compose, configurações, modelos de
 organizações/projetos e migrações anteriores não foram alterados. Nenhuma senha
 ou volume foi alterado e nenhum dado de demonstração foi criado no banco local.
-README atualizado com os campos, regras e validação em novo PowerShell. O PR
-registra o commit exato e o CI aprovado antes da integração; prazo e filtros
-permanecem planejados para as entregas seguintes.
+README atualizado com os campos, regras e validação em novo PowerShell.
+A Entrega 1 foi integrada no [PR #14](https://github.com/danielbramos4/taskflow-backend/pull/14).
+
+## Entrega final do backend
+
+As entregas 2 a 4 foram reunidas para o prazo de 12/11/2026. `due_date` é uma
+data opcional sem horário. A migração `0003_task_due_date` adiciona o campo
+sem preencher prazos de tarefas existentes. O filtro de responsável recebe
+um ID de vínculo ou `unassigned`; `due_from` e `due_to` incluem as datas dos
+limites. Um limite de data exclui tarefas sem prazo. Filtros atuam sobre o
+projeto já autorizado e preservam a ordem e paginação existentes.
+
+O [guia da entrega](entrega-backend.md) documenta instalação, demonstração e
+validação. O fluxo automatizado usa login real e comprova que a remoção do
+vínculo limpa a atribuição sem mudar prazo nem estado, mesmo com reingresso.
+Os 37 testes novos passaram localmente em um banco temporário em memória.
+O CI valida todas as migrações e a suíte completa em PostgreSQL 17.
