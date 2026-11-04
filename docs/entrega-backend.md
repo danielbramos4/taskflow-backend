@@ -28,7 +28,9 @@ from getpass import getpass
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
-User.objects.create_user(username="demo_owner", password=getpass("Senha do proprietário: "))
+User.objects.create_user(
+    username="demo_owner", password=getpass("Senha do proprietário: ")
+)
 User.objects.create_user(username="demo_member", password=getpass("Senha do membro: "))
 ```
 
