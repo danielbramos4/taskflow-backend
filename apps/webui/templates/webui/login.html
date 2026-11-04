@@ -1,0 +1,36 @@
+{% extends "webui/base.html" %}{% load static %}
+{% block title %}Entrar — TaskFlow{% endblock %}
+{% block content %}
+<main class="signin">
+    <aside class="signin-story" aria-label="Sobre o TaskFlow">
+        <div class="brand"><img src="{% static 'webui/mark.svg' %}" alt="" width="36" height="36"> TaskFlow</div>
+        <div class="story-copy">
+            <p class="eyebrow"><span class="dot"></span> SEU TRABALHO EM ORDEM</p>
+            <h1>Da primeira ideia<br>à última tarefa<span>.</span></h1>
+            <p>Organize projetos, combine prazos e acompanhe as entregas da equipe em um só lugar.</p>
+        </div>
+        <div class="story-preview" aria-hidden="true">
+            <div class="preview-heading"><span>Projeto Entrega</span><span class="preview-label">EM ANDAMENTO</span></div>
+            <div><span class="preview-check">✓</span> Definir o plano <span>Concluída</span></div>
+            <div><span class="preview-check pending">•</span> Revisar a entrega <span>Em andamento</span></div>
+        </div>
+        <p class="story-footer">TaskFlow <span>·</span> Gestão de projetos e tarefas</p>
+    </aside>
+    <section class="signin-panel" aria-labelledby="login-title">
+        <form method="post" class="signin-form">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+            <p class="eyebrow">ESPAÇO DE TRABALHO</p>
+            <h2 id="login-title">Entre no TaskFlow</h2>
+            <p class="muted">Use sua conta para acessar os projetos da sua organização.</p>
+            {% if form.errors %}<p role="alert" class="notice error">Não foi possível entrar. Confira o nome de usuário e a senha.</p>{% endif %}
+            <label for="id_username">Nome de usuário</label>
+            <input id="id_username" name="username" value="{{ form.username.value|default_if_none:'' }}" autocomplete="username" required autofocus placeholder="Seu nome de usuário">
+            <label for="id_password">Senha</label>
+            <input id="id_password" type="password" name="password" autocomplete="current-password" required placeholder="Sua senha">
+            <button class="button primary" type="submit">Entrar <span aria-hidden="true">→</span></button>
+            <p class="signin-note">Precisa de acesso? Fale com quem administra o TaskFlow.</p>
+        </form>
+    </section>
+</main>
+{% endblock %}

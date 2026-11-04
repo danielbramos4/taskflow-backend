@@ -1,0 +1,64 @@
+{% extends "webui/base.html" %}{% load static %}
+{% block scripts %}<script src="{% static 'webui/app.js' %}" defer></script>{% endblock %}
+{% block content %}
+<div class="workspace" id="workspace" data-login="{% url 'webui:login' %}">
+    <aside class="sidebar" aria-label="Organizações e projetos">
+        <a class="brand" href="{% url 'webui:dashboard' %}"><img src="{% static 'webui/mark.svg' %}" alt="" width="34" height="34"> TaskFlow</a>
+        <div class="sidebar-group">
+            <label class="eyebrow" for="organization">ORGANIZAÇÃO</label>
+            <select id="organization"><option value="">Carregando…</option></select>
+            <button type="button" id="add-org" class="button quiet">+ Nova organização</button>
+        </div>
+        <nav class="sidebar-group" aria-label="Projetos">
+            <div class="nav-title"><span class="eyebrow">PROJETOS</span><button type="button" id="add-project" class="icon-button" aria-label="Novo projeto" hidden>+</button></div>
+            <div id="project-list" class="project-list"></div>
+        </nav>
+        <div class="sidebar-footer"><span class="dot"></span> Espaço de trabalho</div>
+    </aside>
+    <main class="main-panel" id="main">
+        <header class="topbar">
+            <div class="breadcrumb"><span>Espaço de trabalho</span><span aria-hidden="true">/</span><strong id="top-org">Projetos</strong></div>
+            <div class="account">
+                <div class="avatar" aria-hidden="true">{{ request.user.username|slice:':2'|upper }}</div>
+                <div class="account-name"><strong>{{ request.user.username }}</strong><small>ID da conta: {{ request.user.pk }}</small></div>
+                <form method="post" action="{% url 'webui:logout' %}" id="logout-form">{% csrf_token %}<button class="button quiet" type="submit">Sair</button></form>
+            </div>
+        </header>
+        <div class="main-content">
+            <p class="notice" id="notice" role="status" hidden></p>
+            <section class="project-heading" aria-labelledby="project-title">
+                <div><p class="eyebrow"><span class="dot"></span> PAINEL DE PROJETO</p><h1 id="project-title">Seus projetos</h1><p id="project-description" class="muted">Selecione uma organização para começar.</p></div>
+                <div class="actions"><button id="add-member" class="button secondary" hidden>Adicionar membro</button><button id="new-task" class="button primary" hidden>+ Nova tarefa</button></div>
+            </section>
+            <section id="project-content" hidden>
+                <div class="metrics" aria-label="Estados das tarefas nesta página">
+                    <article class="metric"><span class="metric-icon todo">○</span><div><span>A fazer</span><strong id="count-todo">0</strong></div></article>
+                    <article class="metric"><span class="metric-icon in_progress">◐</span><div><span>Em andamento</span><strong id="count-in_progress">0</strong></div></article>
+                    <article class="metric"><span class="metric-icon done">✓</span><div><span>Concluídas</span><strong id="count-done">0</strong></div></article>
+                </div>
+                <section class="board" aria-labelledby="tasks-heading">
+                    <div class="board-header"><div><h2 id="tasks-heading">Tarefas</h2><p id="result-count" class="muted" aria-live="polite"></p></div><button id="archive-project" class="button quiet" hidden></button></div>
+                    <form id="filters" class="filters">
+                        <label>Responsável<select id="filter-assignee" name="assignee_membership_id"></select></label>
+                        <label>Prazo a partir de<input type="date" name="due_from"></label>
+                        <label>Prazo até<input type="date" name="due_to"></label>
+                        <button class="button secondary" type="submit">Filtrar</button><button class="button quiet" type="reset">Limpar</button>
+                    </form>
+                    <div class="table-wrap"><table><thead><tr><th scope="col">Tarefa</th><th scope="col">Estado</th><th scope="col">Responsável</th><th scope="col">Prazo</th><th scope="col"><span class="sr-only">Ações</span></th></tr></thead><tbody id="tasks"></tbody></table></div>
+                    <p id="empty-tasks" class="empty" hidden>Nenhuma tarefa corresponde a esta consulta.</p>
+                    <nav class="pagination" aria-label="Páginas de tarefas"><button class="button secondary" id="prev-page" disabled>← Anterior</button><span id="page-label"></span><button class="button secondary" id="next-page" disabled>Próxima →</button></nav>
+                </section>
+            </section>
+            <section id="onboarding" class="empty-state"><span class="empty-icon" aria-hidden="true">◇</span><h2 id="onboarding-title">Seu trabalho começa aqui</h2><p id="onboarding-copy">Crie uma organização ou selecione uma equipe para ver os projetos.</p></section>
+        </div>
+    </main>
+</div>
+<dialog id="editor" aria-labelledby="editor-title">
+    <form id="editor-form">
+        <div class="dialog-heading"><h2 id="editor-title"></h2><button class="icon-button" id="close-editor" type="button" aria-label="Fechar">×</button></div>
+        <div id="editor-fields" class="editor-fields"></div>
+        <p id="editor-error" class="notice error" role="alert" hidden></p>
+        <div class="dialog-actions"><button class="button secondary" id="cancel-editor" type="button">Fechar</button><button class="button primary" id="save-editor" type="submit">Salvar</button></div>
+    </form>
+</dialog>
+{% endblock %}

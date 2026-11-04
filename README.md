@@ -1,5 +1,8 @@
 # TaskFlow Backend
 
+O TaskFlow agora inclui uma [interface web e configuração para publicação no Render](docs/interface-e-publicacao.md).
+Com o servidor local ativo, abra `http://127.0.0.1:8000/` e entre com a sua conta.
+
 Fundação do backend TaskFlow em Django, Django REST Framework e PostgreSQL.
 
 Repositório: [danielbramos4/taskflow-backend](https://github.com/danielbramos4/taskflow-backend).
